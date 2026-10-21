@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grizzly Contacts - Contact Manager</title>
+
+    <!-- PWA & Theme Integration -->
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for clean iconography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --accent-color: #10b981;
+            --page-bg: #000000;
+            --page-fg: #f1f5f9;
+            --panel-bg: #18181b;
+            --bar-bg: rgba(0, 0, 0, 0.95);
+            --nav-bg: #09090b;
+            --bar-border: #27272a;
+        }
+        [data-theme="dark"] {
+            --page-bg: #0f172a;
+            --panel-bg: #1e293b;
+            --bar-bg: rgba(15, 23, 42, 0.95);
+            --nav-bg: #020617;
+            --bar-border: #1e293b;
+        }
+        [data-theme="light"] {
+            --page-bg: #f1f5f9;
+            --page-fg: #1e293b;
+            --panel-bg: #ffffff;
+            --bar-bg: rgba(255, 255, 255, 0.95);
+            --nav-bg: #e2e8f0;
+            --bar-border: #cbd5e1;
+        }
+
+        body { background-color: var(--page-bg); color: var(--page-fg); }
+        .panel-bg { background-color: var(--panel-bg); }
+        .app-header { background-color: var(--bar-bg); border-color: var(--bar-border); }
+        .app-nav { background-color: var(--nav-bg); border-color: var(--bar-border); }
+        .tab-btn.active { border-color: var(--accent-color); }
+
+        .accent-text { color: var(--accent-color) !important; }
+        .accent-bg { background-color: var(--accent-color) !important; }
+        .accent-border { border-color: var(--accent-color) !important; }
+        input[type=range], input[type=checkbox] { accent-color: var(--accent-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Light theme overrides */
+        [data-theme="light"] .bg-black, [data-theme="light"] .bg-black\/40, [data-theme="light"] .bg-black\/50 { background-color: #f1f5f9; }
+        [data-theme="light"] .bg-zinc-800 { background-color: #e2e8f0; }
+        [data-theme="light"] .bg-zinc-900 { background-color: #f8fafc; }
+        [data-theme="light"] .border-zinc-800, [data-theme="light"] .border-zinc-700 { border-color: #cbd5e1; }
+        [data-theme="light"] .text-white:not(.accent-bg), [data-theme="light"] .text-zinc-100, [data-theme="light"] .text-zinc-200, [data-theme="light"] .text-zinc-300 { color: #1e293b; }
+        [data-theme="light"] .text-zinc-400, [data-theme="light"] .text-zinc-500 { color: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans transition-colors duration-200 select-none pb-20">
+
+    <!-- TOP HEADER -->
+    <header class="app-header sticky top-0 z-30 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <img id="secretLogoBtn" src="small-icon.png" alt="Logo" class="w-9 h-9 rounded-full object-cover border border-zinc-700 shadow-sm cursor-pointer" title="Tap 3 times for private contacts" />
+            <div>
+                <h1 id="appTitleHeader" class="text-base font-bold tracking-tight leading-none text-emerald-400">GRIZZLY CONTACTS</h1>
+                <p class="text-[10px] text-zinc-400 font-medium">Secure Address Book</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="openAddContactBtn" aria-label="Add contact" class="accent-bg hover:opacity-90 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-plus"></i>
+                <span class="hidden sm:inline">Add Contact</span>
+            </button>
+            <button id="openSettingsBtn" aria-label="Open settings" class="p-2.5 rounded-xl text-zinc-300 hover:bg-zinc-800/50 transition">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="app-nav border-b px-4 pt-2">
+        <div class="flex space-x-2 overflow-x-auto no-scrollbar max-w-4xl mx-auto" id="navTabs">
+            <button data-tab="all" class="tab-btn active px-4 py-2.5 text-xs font-semibold rounded-t-lg border-b-2 accent-text flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-address-book"></i> <span>All & Favorites</span>
+            </button>
+            <button data-tab="groups" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-layer-group"></i> <span>Groups</span>
+            </button>
+            <button data-tab="bin" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-trash-arrow-up"></i> <span>Recycle Bin</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] hidden px-4 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-xs font-medium shadow-xl border border-zinc-700 max-w-[90vw] text-center"></div>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-4">
+
+        <!-- SEARCH & TOOLBAR -->
+        <div id="toolbar" class="panel-bg p-3 rounded-2xl border border-zinc-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search contacts by name, number, email..." class="w-full pl-9 pr-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <button id="btnViewToggle" aria-label="Switch view" title="Switch list / grid" class="w-9 h-9 flex-shrink-0 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition flex items-center justify-center">
+                    <i class="fa-solid fa-grip"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs">
+                <button id="btnSelectAll" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition">Select All</button>
+                <button id="btnDuplicateFinder" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-medium transition flex items-center space-x-1" title="Find duplicate contacts">
+                    <i class="fa-solid fa-clone"></i> <span class="hidden sm:inline">Duplicates</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: ALL & FAVORITES -->
+        <section id="view-all" class="tab-view space-y-3">
+            <div id="contactsList" class="space-y-1.5"></div>
+        </section>
+
+        <!-- TAB CONTENT: GROUPS -->
+        <section id="view-groups" class="tab-view hidden space-y-3">
+            <div class="flex justify-between items-center bg-black/40 p-3 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Contact Groups</h2>
+                    <p class="text-[11px] text-zinc-400">Manage groups & 3rd party sharing permissions</p>
+                </div>
+                <button id="openAddGroupBtn" class="accent-bg text-white text-xs font-semibold px-3 py-2 rounded-xl shadow transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plus"></i> <span>New Group</span>
+                </button>
+            </div>
+            <div id="groupsContainer" class="space-y-3"></div>
+        </section>
+
+        <!-- TAB CONTENT: RECYCLE BIN -->
+        <section id="view-bin" class="tab-view hidden space-y-3">
+            <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl text-xs text-amber-400 flex items-center justify-between">
+                <span>Items are permanently deleted after 30 days.</span>
+                <button id="btnClearBin" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-3 py-1.5 rounded-lg">Empty Bin</button>
+            </div>
+            <div id="binList" class="space-y-1.5"></div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER SIGNATURE -->
+    <div class="fixed bottom-1 left-0 right-0 z-10 text-center pointer-events-none">
+        <p class="text-[10px] font-mono tracking-widest text-zinc-600 uppercase">By REAPER-357</p>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-md rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-5 text-center relative max-h-[90vh] overflow-y-auto">
+            <button class="closeModalBtn absolute top-4 right-4 text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+
+            <img src="icon.png" alt="Logo" class="w-24 h-24 mx-auto rounded-2xl object-cover border-2 border-zinc-700 shadow-lg mb-1" />
+            <h3 class="text-base font-bold text-white">Grizzly Settings</h3>
+
+            <!-- Theme Picker -->
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">Theme</span>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setAppTheme('black')" class="py-1.5 rounded-xl text-xs bg-zinc-900 border border-zinc-700 text-white">Pure Black</button>
+                    <button onclick="setAppTheme('dark')" class="py-1.5 rounded-xl text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">Dark</button>
+                    <button onclick="setAppTheme('light')" class="py-1.5 rounded-xl text-xs bg-slate-200 border border-slate-300 text-slate-800">Light</button>
+                </div>
+            </div>
+
+            <!-- Accent Color -->
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">Accent Color</span>
+                <div class="flex items-center justify-around pt-1">
+                    <button onclick="setAccentColor('#10b981')" class="w-7 h-7 rounded-full bg-emerald-500 shadow"></button>
+                    <button onclick="setAccentColor('#ef4444')" class="w-7 h-7 rounded-full bg-red-500 shadow"></button>
+                    <button onclick="setAccentColor('#3b82f6')" class="w-7 h-7 rounded-full bg-blue-500 shadow"></button>
+                    <button onclick="setAccentColor('#a855f7')" class="w-7 h-7 rounded-full bg-purple-500 shadow"></button>
+                    <button onclick="setAccentColor('#f59e0b')" class="w-7 h-7 rounded-full bg-amber-500 shadow"></button>
+                </div>
+            </div>
+
+            <!-- Cloud Webhook Sync -->
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
+                <span class="font-semibold text-zinc-300">Cloud Webhook (Excel / XLSX Backup)</span>
+                <p class="text-[10px] text-zinc-400">Automatically syncs contacts backup as spreadsheet data to your cloud endpoint when modified.</p>
+                <input type="text" id="webhookUrlInput" placeholder="https://your-cloud-webhook.com/endpoint" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <button id="btnTestWebhook" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-xl transition">Sync / Trigger Webhook Now</button>
+            </div>
+
+            <!-- Export / Safe Import -->
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
+                <span class="font-semibold text-zinc-300">Data Management</span>
+                <div class="flex gap-2">
+                    <button id="btnExportJson" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl">Export JSON</button>
+                    <label class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-center cursor-pointer">
+                        Safe Import <input type="file" id="importJsonInput" accept=".json" class="hidden">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTACT EDIT / CREATE MODAL -->
+    <div id="contactModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-lg rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 id="contactModalTitle" class="text-base font-bold text-white">Add Contact</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="editingContactId" value="">
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 mb-1">First Name *</label>
+                    <input type="text" id="cFirst" placeholder="First name" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 mb-1">Last Name</label>
+                    <input type="text" id="cLast" placeholder="Last name" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 mb-1">Middle Name</label>
+                    <input type="text" id="cMiddle" placeholder="Middle name" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 mb-1">Nickname</label>
+                    <input type="text" id="cNick" placeholder="Nickname" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-zinc-300 mb-1">Birthday</label>
+                <input type="date" id="cBday" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+            </div>
+
+            <!-- Phone Numbers Section -->
+            <div class="space-y-2 border-t border-zinc-800 pt-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-zinc-300">Phone Numbers</span>
+                    <button type="button" id="btnAddPhoneField" class="text-xs accent-text font-semibold">+ Add Phone</button>
+                </div>
+                <div id="phoneFieldsContainer" class="space-y-2"></div>
+            </div>
+
+            <!-- Emails Section -->
+            <div class="space-y-2 border-t border-zinc-800 pt-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-zinc-300">Email Addresses</span>
+                    <button type="button" id="btnAddEmailField" class="text-xs accent-text font-semibold">+ Add Email</button>
+                </div>
+                <div id="emailFieldsContainer" class="space-y-2"></div>
+            </div>
+
+            <!-- Groups Assignment -->
+            <div class="border-t border-zinc-800 pt-3 space-y-1">
+                <label class="block text-xs font-semibold text-zinc-300">Assign to Groups</label>
+                <div id="contactGroupsCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-zinc-300 mb-1">Notes</label>
+                <textarea id="cNotes" rows="2" placeholder="Additional notes..." class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Cancel</button>
+                <button id="btnSaveContact" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow">Save Contact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUP EDIT / CREATE MODAL -->
+    <div id="groupModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 id="groupModalTitle" class="text-base font-bold text-white">Create Group</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="editingGroupId" value="">
+            <div>
+                <label class="block text-xs font-semibold text-zinc-300 mb-1">Group Name</label>
+                <input type="text" id="gName" placeholder="e.g. Mechanic, Family" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-zinc-300 mb-1">Notes</label>
+                <textarea id="gNotes" rows="2" placeholder="Notes..." class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white"></textarea>
+            </div>
+            <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-zinc-800">
+                <div>
+                    <span class="text-xs font-semibold text-white block">Allow 3rd Party Sync</span>
+                    <span class="text-[10px] text-zinc-400">Permit Telegram, Facebook, etc. to access</span>
+                </div>
+                <input type="checkbox" id="gSyncToggle" class="w-5 h-5 rounded cursor-pointer">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Cancel</button>
+                <button id="btnSaveGroup" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow">Save Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECRET PIN MODAL -->
+    <div id="pinModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-xs rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 bg-emerald-950 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Private Contacts</h3>
+            <p class="text-xs text-zinc-400">Enter your 4-digit PIN (default: 1234)</p>
+            <input type="password" id="pinInput" maxlength="4" placeholder="••••" class="w-32 text-center tracking-widest text-lg mx-auto py-2 bg-black border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-emerald-500">
+            <div class="flex justify-center space-x-2 pt-2">
+                <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Cancel</button>
+                <button id="btnSubmitPin" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DUPLICATE RESOLUTION MODAL -->
+    <div id="duplicateModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-md rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-bold text-amber-400"><i class="fa-solid fa-clone mr-1"></i> Duplicate Finder</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-zinc-400">Identical matches found by Name, Phone, or Email.</p>
+            <div id="duplicateListContainer" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1"></div>
+            <div class="flex justify-end pt-2">
+                <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION LOGIC SCRIPT -->
+    <script>
+        /* ---------- State Management ---------- */
+        let contacts = safeParse(localStorage.getItem('grizzly_contacts'), []);
+        let groups = safeParse(localStorage.getItem('grizzly_groups'), [
+            { id: 'g1', name: 'Family', notes: 'Close relatives', allowSync: true },
+            { id: 'g2', name: 'Work', notes: 'Colleagues', allowSync: true },
+            { id: 'g3', name: 'Mechanic', notes: 'Do not share', allowSync: false },
+            { id: 'g4', name: 'Dentist', notes: 'Do not share', allowSync: false }
+        ]);
+        let recycleBin = safeParse(localStorage.getItem('grizzly_bin'), []);
+        
+        let viewMode = 'list'; // 'list' or 'grid'
+        let currentTab = 'all';
+        let isPrivateMode = false;
+        let secretClickCount = 0;
+        let secretClickTimer = null;
+
+        /* ---------- Utility Helpers ---------- */
+        function safeParse(str, fallback) {
+            try { return str ? JSON.parse(str) : fallback; } catch (e) { return fallback; }
+        }
+
+        function escapeHtml(str) {
+            return String(str == null ? '' : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const toastEl = document.getElementById('toast');
+            toastEl.textContent = msg;
+            toastEl.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 2600);
+        }
+
+        function persistData() {
+            localStorage.setItem('grizzly_contacts', JSON.stringify(contacts));
+            localStorage.setItem('grizzly_groups', JSON.stringify(groups));
+            localStorage.setItem('grizzly_bin', JSON.stringify(recycleBin));
+            triggerWebhookBackup();
+        }
+
+        /* ---------- Webhook Cloud Sync ---------- */
+        function triggerWebhookBackup() {
+            const webhookUrl = document.getElementById('webhookUrlInput').value.trim();
+            if (!webhookUrl) return;
+            
+            const payload = {
+                timestamp: new Date().toISOString(),
+                app: "Grizzly Contacts",
+                totalContacts: contacts.length,
+                contacts: contacts,
+                groups: groups
+            };
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(res => {
+                if(res.ok) showToast('Cloud Webhook Synced Successfully!');
+            }).catch(err => console.error('Webhook sync failed', err));
+        }
+
+        document.getElementById('webhookUrlInput').addEventListener('input', (e) => {
+            localStorage.setItem('grizzly_webhook', e.target.value);
+        });
+
+        document.getElementById('btnTestWebhook').addEventListener('click', () => {
+            const url = document.getElementById('webhookUrlInput').value.trim();
+            if(!url) return alert('Please enter a webhook URL first.');
+            triggerWebhookBackup();
+            showToast('Webhook trigger sent.');
+        });
+
+        /* ---------- Theme & Preferences ---------- */
+        function setAccentColor(hex) {
+            localStorage.setItem('gc_accent_color', hex);
+            document.documentElement.style.setProperty('--accent-color', hex);
+            document.getElementById('appTitleHeader').style.color = hex;
+        }
+
+        function setAppTheme(theme) {
+            if (!['black', 'dark', 'light'].includes(theme)) theme = 'black';
+            localStorage.setItem('gc_app_theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.classList.toggle('dark', theme !== 'light');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', { black: '#000000', dark: '#0f172a', light: '#f1f5f9' }[theme]);
+        }
+
+        function initPreferences() {
+            setAccentColor(localStorage.getItem('gc_accent_color') || '#10b981');
+            setAppTheme(localStorage.getItem('gc_app_theme') || 'black');
+            const savedWebhook = localStorage.getItem('grizzly_webhook');
+            if(savedWebhook) document.getElementById('webhookUrlInput').value = savedWebhook;
+        }
+
+        /* ---------- Initialization & Navigation ---------- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initPreferences();
+            setupTabs();
+            setupSecretTrigger();
+            renderAllViews();
+        });
+
+        function setupTabs() {
+            const tabs = document.querySelectorAll('#navTabs button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        t.classList.remove('active', 'border-b-2', 'accent-text', 'font-semibold');
+                        t.classList.add('text-zinc-400', 'font-medium');
+                    });
+                    tab.classList.add('active', 'border-b-2', 'accent-text', 'font-semibold');
+                    tab.classList.remove('text-zinc-400', 'font-medium');
+
+                    currentTab = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+                    document.getElementById(`view-${currentTab}`).classList.remove('hidden');
+                    renderCurrentTab();
+                });
+            });
+            document.getElementById('searchInput').addEventListener('input', renderCurrentTab);
+            document.getElementById('btnViewToggle').addEventListener('click', () => {
+                viewMode = viewMode === 'list' ? 'grid' : 'list';
+                document.getElementById('btnViewToggle').innerHTML = viewMode === 'grid' ? '<i class="fa-solid fa-list"></i>' : '<i class="fa-solid fa-grip"></i>';
+                renderCurrentTab();
+            });
+        }
+
+        function setupSecretTrigger() {
+            document.getElementById('secretLogoBtn').addEventListener('click', () => {
+                secretClickCount++;
+                clearTimeout(secretClickTimer);
+                secretClickTimer = setTimeout(() => { secretClickCount = 0; }, 1000);
+                if (secretClickCount >= 3) {
+                    secretClickCount = 0;
+                    document.getElementById('pinModal').classList.remove('hidden');
+                }
+            });
+
+            document.getElementById('btnSubmitPin').addEventListener('click', () => {
+                const pin = document.getElementById('pinInput').value;
+                if (pin === '1234') {
+                    isPrivateMode = !isPrivateMode;
+                    document.getElementById('pinModal').classList.add('hidden');
+                    document.getElementById('pinInput').value = '';
+                    showToast(isPrivateMode ? 'Private Contacts Unlocked 🔓' : 'Locked standard mode');
+                    renderCurrentTab();
+                } else {
+                    alert('Incorrect PIN!');
+                }
+            });
+        }
+
+        function renderCurrentTab() {
+            if (currentTab === 'all') renderContactsView();
+            else if (currentTab === 'groups') renderGroupsView();
+            else if (currentTab === 'bin') renderBinView();
+        }
+
+        function renderAllViews() {
+            renderCurrentTab();
+        }
+
+        /* ---------- Contacts Rendering (All & Favorites) ---------- */
+        function renderContactsView() {
+            const container = document.getElementById('contactsList');
+            container.innerHTML = '';
+            const filter = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            let list = contacts.filter(c => !!c.private === isPrivateMode);
+            
+            if (filter) {
+                list = list.filter(c => 
+                    `${c.first} ${c.middle} ${c.last}`.toLowerCase().includes(filter) ||
+                    (c.phones || []).some(p => p.number.includes(filter)) ||
+                    (c.emails || []).some(e => e.address.toLowerCase().includes(filter))
+                );
+            }
+
+            // Alphabetical sorting
+            list.sort((a, b) => (a.first || '').localeCompare(b.first || ''));
+
+            // Favorites pinned to top
+            list.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+
+            if (!list.length) {
+                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">No contacts found.</div>`;
+                return;
+            }
+
+            container.className = viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 gap-3' : 'space-y-1.5';
+
+            const frag = document.createDocumentFragment();
+            list.forEach(c => {
+                const primaryPhone = (c.phones || []).find(p => p.isDefault) || c.phones?.[0] || { number: 'No number' };
+                const primaryEmail = (c.emails || []).find(e => e.isDefault) || c.emails?.[0] || { address: '' };
+                const fullName = `${c.first || ''} ${c.middle || ''} ${c.last || ''}`.trim();
+
+                const card = document.createElement('div');
+                if (viewMode === 'grid') {
+                    card.className = `panel-bg p-3 rounded-2xl border border-zinc-800 flex flex-col justify-between space-y-2 relative`;
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-sm uppercase">
+                                ${(c.first?.[0] || '') + (c.last?.[0] || '')}
+                            </div>
+                            <button onclick="toggleFavorite('${c.id}')" class="text-xs ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold truncate text-white">${escapeHtml(fullName)}</h4>
+                            <p class="text-[11px] text-zinc-400 truncate">${escapeHtml(primaryPhone.number)}</p>
+                        </div>
+                        <div class="flex justify-end space-x-2 pt-1 border-t border-zinc-800/60 text-xs">
+                            <button onclick="openEditContact('${c.id}')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteContact('${c.id}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                } else {
+                    card.className = `panel-bg p-3 rounded-xl border border-zinc-800 flex items-center justify-between space-x-3`;
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3 min-w-0 flex-1">
+                            <div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-xs uppercase flex-shrink-0">
+                                ${(c.first?.[0] || '') + (c.last?.[0] || '')}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h4 class="text-xs font-bold truncate text-white">${escapeHtml(fullName)}</h4>
+                                    ${c.favorite ? '<i class="fa-solid fa-star text-amber-400 text-[10px]"></i>' : ''}
+                                </div>
+                                <p class="text-[11px] text-zinc-400 truncate">${escapeHtml(primaryPhone.number)} ${primaryEmail.address ? '• ' + escapeHtml(primaryEmail.address) : ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs flex-shrink-0">
+                            <button onclick="toggleFavorite('${c.id}')" class="p-2 ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="openEditContact('${c.id}')" class="p-2 text-zinc-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteContact('${c.id}')" class="p-2 text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                }
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
+        }
+
+        function toggleFavorite(id) {
+            const c = contacts.find(x => x.id === id);
+            if (c) {
+                c.favorite = !c.favorite;
+                persistData();
+                renderCurrentTab();
+            }
+        }
+
+        function deleteContact(id) {
+            const idx = contacts.findIndex(x => x.id === id);
+            if (idx !== -1) {
+                const item = contacts.splice(idx, 1)[0];
+                item.deletedAt = new Date().toISOString();
+                recycleBin.push(item);
+                persistData();
+                renderCurrentTab();
+                showToast('Contact moved to Recycle Bin');
+            }
+        }
+
+        /* ---------- Groups Tab ---------- */
+        function renderGroupsView() {
+            const container = document.getElementById('groupsContainer');
+            container.innerHTML = '';
+            const filter = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            const frag = document.createDocumentFragment();
+            groups.forEach(g => {
+                const groupContacts = contacts.filter(c => (c.groupIds || []).includes(g.id) && !!c.private === isPrivateMode);
+                const matchedContacts = filter ? groupContacts.filter(c => `${c.first} ${c.last}`.toLowerCase().includes(filter)) : groupContacts;
+
+                const card = document.createElement('div');
+                card.className = 'panel-bg rounded-2xl border border-zinc-800 p-4 space-y-3';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <span>${escapeHtml(g.name)}</span>
+                                <span class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-400">${groupContacts.length} contacts</span>
+                            </h3>
+                            <p class="text-[11px] text-zinc-400">${escapeHtml(g.notes || 'No description')}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs">
+                            <label class="flex items-center space-x-1 cursor-pointer" title="Toggle 3rd party sync sharing">
+                                <span class="text-[10px] text-zinc-400">Sync:</span>
+                                <input type="checkbox" ${g.allowSync ? 'checked' : ''} onchange="toggleGroupSync('${g.id}', this.checked)" class="w-4 h-4 rounded cursor-pointer">
+                            </label>
+                            <button onclick="openEditGroup('${g.id}')" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteGroup('${g.id}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <!-- Dropdown contacts list under group -->
+                    <div class="space-y-1.5 pt-2 border-t border-zinc-800/80">
+                        ${matchedContacts.length ? matchedContacts.map(c => `
+                            <div class="p-2 rounded-xl bg-black/30 border border-zinc-800 flex items-center justify-between text-xs">
+                                <span class="font-medium text-white">${escapeHtml(c.first + ' ' + (c.last || ''))}</span>
+                                <span class="text-[11px] text-zinc-400">${escapeHtml(c.phones?.[0]?.number || '')}</span>
+                            </div>
+                        `).join('') : '<p class="text-[11px] text-zinc-500 italic">No contacts in this group.</p>'}
+                    </div>
+                `;
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
+        }
+
+        function toggleGroupSync(id, val) {
+            const g = groups.find(x => x.id === id);
+            if (g) {
+                g.allowSync = val;
+                persistData();
+                showToast(`Group "${g.name}" sync sharing ${val ? 'enabled' : 'disabled'}`);
+            }
+        }
+
+        function deleteGroup(id) {
+            groups = groups.filter(x => x.id !== id);
+            persistData();
+            renderGroupsView();
+            showToast('Group deleted');
+        }
+
+        /* ---------- Recycle Bin Tab ---------- */
+        function renderBinView() {
+            const container = document.getElementById('binList');
+            container.innerHTML = '';
+
+            // Auto clean past 30 days
+            const now = new Date();
+            recycleBin = recycleBin.filter(item => {
+                const diffTime = Math.abs(now - new Date(item.deletedAt));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 30;
+            });
+            persistData();
+
+            if (!recycleBin.length) {
+                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">Recycle bin is empty.</div>`;
+                return;
+            }
+
+            const frag = document.createDocumentFragment();
+            recycleBin.forEach((c, idx) => {
+                const card = document.createElement('div');
+                card.className = 'panel-bg p-3 rounded-xl border border-zinc-800 flex items-center justify-between text-xs';
+                card.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white">${escapeHtml(c.first + ' ' + (c.last || ''))}</span>
+                        <p class="text-[10px] text-zinc-500">Deleted: ${new Date(c.deletedAt).toLocaleDateString()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="restoreBinItem(${idx})" class="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold">Restore</button>
+                        <button onclick="permanentlyDelete(${idx})" class="px-3 py-1 rounded bg-red-950 text-red-400 font-semibold">Delete</button>
+                    </div>
+                `;
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
+        }
+
+        function restoreBinItem(idx) {
+            const item = recycleBin.splice(idx, 1)[0];
+            delete item.deletedAt;
+            contacts.push(item);
+            persistData();
+            renderCurrentTab();
+            showToast('Contact restored');
+        }
+
+        function permanentlyDelete(idx) {
+            recycleBin.splice(idx, 1);
+            persistData();
+            renderCurrentTab();
+            showToast('Permanently deleted');
+        }
+
+        document.getElementById('btnClearBin').addEventListener('click', () => {
+            recycleBin = [];
+            persistData();
+            renderCurrentTab();
+            showToast('Recycle bin emptied');
+        });
+
+        /* ---------- Contact Modal & Dynamic Fields ---------- */
+        const contactModal = document.getElementById('contactModal');
+        const phoneFieldsContainer = document.getElementById('phoneFieldsContainer');
+        const emailFieldsContainer = document.getElementById('emailFieldsContainer');
+
+        document.getElementById('openAddContactBtn').addEventListener('click', () => {
+            document.getElementById('contactModalTitle').innerText = 'Add Contact';
+            document.getElementById('editingContactId').value = '';
+            document.getElementById('cFirst').value = '';
+            document.getElementById('cMiddle').value = '';
+            document.getElementById('cLast').value = '';
+            document.getElementById('cNick').value = '';
+            document.getElementById('cBday').value = '';
+            document.getElementById('cNotes').value = '';
+            phoneFieldsContainer.innerHTML = '';
+            emailFieldsContainer.innerHTML = '';
+            addPhoneField('', 'Personal', true);
+            addEmailField('', 'Personal', true);
+            renderContactGroupCheckboxes([]);
+            contactModal.classList.remove('hidden');
+        });
+
+        function addPhoneField(number = '', tag = 'Personal', isDefault = false) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <input type="text" placeholder="Phone number" value="${escapeHtml(number)}" class="phone-num-input flex-1 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <select class="phone-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">
+                    <option value="Personal" ${tag==='Personal'?'selected':''}>Personal</option>
+                    <option value="Work" ${tag==='Work'?'selected':''}>Work</option>
+                    <option value="Mobile" ${tag==='Mobile'?'selected':''}>Mobile</option>
+                    <option value="Other" ${tag==='Other'?'selected':''}>Other</option>
+                </select>
+                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultPhone" ${isDefault?'checked':''}> Default</label>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 text-xs px-1"><i class="fa-solid xmark fa-x"></i></button>
+            `;
+            phoneFieldsContainer.appendChild(div);
+        }
+
+        function addEmailField(address = '', tag = 'Personal', isDefault = false) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <input type="email" placeholder="Email address" value="${escapeHtml(address)}" class="email-addr-input flex-1 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <select class="email-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">
+                    <option value="Personal" ${tag==='Personal'?'selected':''}>Personal</option>
+                    <option value="Work" ${tag==='Work'?'selected':''}>Work</option>
+                    <option value="Other" ${tag==='Other'?'selected':''}>Other</option>
+                </select>
+                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultEmail" ${isDefault?'checked':''}> Default</label>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 text-xs px-1"><i class="fa-solid fa-x"></i></button>
+            `;
+            emailFieldsContainer.appendChild(div);
+        }
+
+        document.getElementById('btnAddPhoneField').addEventListener('click', () => addPhoneField());
+        document.getElementById('btnAddEmailField').addEventListener('click', () => addEmailField());
+
+        function renderContactGroupCheckboxes(selectedIds = []) {
+            const container = document.getElementById('contactGroupsCheckboxes');
+            container.innerHTML = '';
+            groups.forEach(g => {
+                const checked = selectedIds.includes(g.id);
+                const lbl = document.createElement('label');
+                lbl.className = 'flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300 cursor-pointer';
+                lbl.innerHTML = `<input type="checkbox" value="${g.id}" ${checked?'checked':''} class="contact-group-chk w-3.5 h-3.5 rounded"> <span>${escapeHtml(g.name)}</span>`;
+                container.appendChild(lbl);
+            });
+        }
+
+        function openEditContact(id) {
+            const c = contacts.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('contactModalTitle').innerText = 'Edit Contact';
+            document.getElementById('editingContactId').value = c.id;
+            document.getElementById('cFirst').value = c.first || '';
+            document.getElementById('cMiddle').value = c.middle || '';
+            document.getElementById('cLast').value = c.last || '';
+            document.getElementById('cNick').value = c.nick || '';
+            document.getElementById('cBday').value = c.bday || '';
+            document.getElementById('cNotes').value = c.notes || '';
+
+            phoneFieldsContainer.innerHTML = '';
+            (c.phones || []).forEach((p, i) => addPhoneField(p.number, p.tag, p.isDefault || i === 0));
+            if (!c.phones?.length) addPhoneField('', 'Personal', true);
+
+            emailFieldsContainer.innerHTML = '';
+            (c.emails || []).forEach((e, i) => addEmailField(e.address, e.tag, e.isDefault || i === 0));
+            if (!c.emails?.length) addEmailField('', 'Personal', true);
+
+            renderContactGroupCheckboxes(c.groupIds || []);
+            contactModal.classList.remove('hidden');
+        }
+
+        document.getElementById('btnSaveContact').addEventListener('click', () => {
+            const first = document.getElementById('cFirst').value.trim();
+            if (!first) return alert('First name is required.');
+
+            const phones = Array.from(phoneFieldsContainer.children).map(row => ({
+                number: row.querySelector('.phone-num-input').value.trim(),
+                tag: row.querySelector('.phone-tag-input').value,
+                isDefault: row.querySelector('input[type="radio"]').checked
+            })).filter(p => p.number);
+
+            const emails = Array.from(emailFieldsContainer.children).map(row => ({
+                address: row.querySelector('.email-addr-input').value.trim(),
+                tag: row.querySelector('.email-tag-input').value,
+                isDefault: row.querySelector('input[type="radio"]').checked
+            })).filter(e => e.address);
+
+            const groupIds = Array.from(document.querySelectorAll('.contact-group-chk:checked')).map(chk => chk.value);
+            const editId = document.getElementById('editingContactId').value;
+
+            const contactData = {
+                id: editId || 'c_' + Date.now().toString(36),
+                first,
+                middle: document.getElementById('cMiddle').value.trim(),
+                last: document.getElementById('cLast').value.trim(),
+                nick: document.getElementById('cNick').value.trim(),
+                bday: document.getElementById('cBday').value,
+                notes: document.getElementById('cNotes').value.trim(),
+                phones,
+                emails,
+                groupIds,
+                private: isPrivateMode,
+                favorite: false
+            };
+
+            if (editId) {
+                const idx = contacts.findIndex(x => x.id === editId);
+                if (idx !== -1) {
+                    contactData.favorite = contacts[idx].favorite;
+                    contacts[idx] = contactData;
+                }
+            } else {
+                contacts.push(contactData);
+            }
+
+            persistData();
+            contactModal.classList.add('hidden');
+            renderCurrentTab();
+            showToast('Contact saved successfully');
+        });
+
+        /* ---------- Group Modal ---------- */
+        const groupModal = document.getElementById('groupModal');
+        document.getElementById('openAddGroupBtn').addEventListener('click', () => {
+            document.getElementById('groupModalTitle').innerText = 'Create Group';
+            document.getElementById('editingGroupId').value = '';
+            document.getElementById('gName').value = '';
+            document.getElementById('gNotes').value = '';
+            document.getElementById('gSyncToggle').checked = true;
+            groupModal.classList.remove('hidden');
+        });
+
+        function openEditGroup(id) {
+            const g = groups.find(x => x.id === id);
+            if (!g) return;
+            document.getElementById('groupModalTitle').innerText = 'Edit Group';
+            document.getElementById('editingGroupId').value = g.id;
+            document.getElementById('gName').value = g.name || '';
+            document.getElementById('gNotes').value = g.notes || '';
+            document.getElementById('gSyncToggle').checked = !!g.allowSync;
+            groupModal.classList.remove('hidden');
+        }
+
+        document.getElementById('btnSaveGroup').addEventListener('click', () => {
+            const name = document.getElementById('gName').value.trim();
+            if (!name) return alert('Group name required.');
+            const editId = document.getElementById('editingGroupId').value;
+
+            const groupData = {
+                id: editId || 'g_' + Date.now().toString(36),
+                name,
+                notes: document.getElementById('gNotes').value.trim(),
+                allowSync: document.getElementById('gSyncToggle').checked
+            };
+
+            if (editId) {
+                const idx = groups.findIndex(x => x.id === editId);
+                if (idx !== -1) groups[idx] = groupData;
+            } else {
+                groups.push(groupData);
+            }
+
+            persistData();
+            groupModal.classList.add('hidden');
+            renderGroupsView();
+            showToast('Group saved');
+        });
+
+        /* ---------- Duplicate Finder ---------- */
+        document.getElementById('btnDuplicateFinder').addEventListener('click', () => {
+            const map = new Map();
+            const duplicates = [];
+
+            contacts.forEach(c => {
+                const nameKey = `${c.first || ''} ${c.last || ''}`.trim().toLowerCase();
+                const phoneKey = c.phones?.[0]?.number || '';
+                const emailKey = c.emails?.[0]?.address || '';
+
+                const key = `${nameKey}_${phoneKey}_${emailKey}`;
+                if (nameKey && (map.has(nameKey) || (phoneKey && map.has(phoneKey)))) {
+                    duplicates.push(c);
+                } else {
+                    if (nameKey) map.set(nameKey, c);
+                    if (phoneKey) map.set(phoneKey, c);
+                }
+            });
+
+            const container = document.getElementById('duplicateListContainer');
+            container.innerHTML = '';
+
+            if (!duplicates.length) {
+                container.innerHTML = `<p class="text-xs text-zinc-400 text-center py-6">No duplicate contacts detected.</p>`;
+            } else {
+                duplicates.forEach(dup => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 rounded-xl bg-black/40 border border-zinc-800 flex items-center justify-between text-xs';
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-white">${escapeHtml(dup.first + ' ' + (dup.last || ''))}</span>
+                            <p class="text-[10px] text-zinc-400">${escapeHtml(dup.phones?.[0]?.number || 'No phone')}</p>
+                        </div>
+                        <button onclick="mergeDuplicate('${dup.id}')" class="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold">Merge / Remove</button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            document.getElementById('duplicateModal').classList.remove('hidden');
+        });
+
+        function mergeDuplicate(id) {
+            contacts = contacts.filter(x => x.id !== id);
+            persistData();
+            document.getElementById('duplicateModal').classList.add('hidden');
+            renderCurrentTab();
+            showToast('Duplicate merged/removed successfully');
+        }
+
+        /* ---------- Export & Safe Import ---------- */
+        document.getElementById('btnExportJson').addEventListener('click', () => {
+            const data = { contacts, groups };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'grizzly_contacts_backup.json';
+            a.click();
+            a.remove();
+        });
+
+        document.getElementById('importJsonInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const parsed = JSON.parse(ev.target.result);
+                    if (parsed.contacts && Array.isArray(parsed.contacts)) {
+                        // Safe merge check
+                        let added = 0;
+                        parsed.contacts.forEach(imp => {
+                            const exists = contacts.some(c => c.first === imp.first && c.last === imp.last);
+                            if (!exists) {
+                                contacts.push(imp);
+                                added++;
+                            }
+                        });
+                        persistData();
+                        renderCurrentTab();
+                        alert(`Imported ${added} new contacts safely without overwriting matches.`);
+                    }
+                } catch (err) {
+                    alert('Invalid JSON file format.');
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        /* ---------- Modal Close Buttons ---------- */
+        document.querySelectorAll('.closeModalBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.add('hidden');
+                contactModal.classList.add('hidden');
+                groupModal.classList.add('hidden');
+                document.getElementById('pinModal').classList.add('hidden');
+                document.getElementById('duplicateModal').classList.add('hidden');
+            });
+        });
+
+        document.getElementById('openSettingsBtn').addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        });
+
+        /* ---------- Service Worker Registration ---------- */
+        if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+        }
+
+    </script>
+</body>
+</html>

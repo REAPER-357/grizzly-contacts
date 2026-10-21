@@ -8,7 +8,9 @@
     <!-- PWA & Theme Integration -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
 
     <!-- Tailwind CSS CDN -->
@@ -19,19 +21,12 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                        }
+                        brand: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857' }
                     }
                 }
             }
         }
     </script>
-    <!-- FontAwesome for clean iconography -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -60,6 +55,8 @@
         }
 
         body { background-color: var(--page-bg); color: var(--page-fg); }
+        /* Only chrome is non-selectable; contact text (numbers, emails) can be copied */
+        button, nav, header, .no-select { -webkit-user-select: none; user-select: none; }
         .panel-bg { background-color: var(--panel-bg); }
         .app-header { background-color: var(--bar-bg); border-color: var(--bar-border); }
         .app-nav { background-color: var(--nav-bg); border-color: var(--bar-border); }
@@ -68,20 +65,22 @@
         .accent-text { color: var(--accent-color) !important; }
         .accent-bg { background-color: var(--accent-color) !important; }
         .accent-border { border-color: var(--accent-color) !important; }
-        input[type=range], input[type=checkbox] { accent-color: var(--accent-color); }
+        input[type=range], input[type=checkbox], input[type=radio] { accent-color: var(--accent-color); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .row-selected { outline: 2px solid var(--accent-color); }
 
         /* Light theme overrides */
-        [data-theme="light"] .bg-black, [data-theme="light"] .bg-black\/40, [data-theme="light"] .bg-black\/50 { background-color: #f1f5f9; }
+        [data-theme="light"] .bg-black, [data-theme="light"] .bg-black\/40, [data-theme="light"] .bg-black\/50, [data-theme="light"] .bg-black\/30 { background-color: #f1f5f9; }
         [data-theme="light"] .bg-zinc-800 { background-color: #e2e8f0; }
         [data-theme="light"] .bg-zinc-900 { background-color: #f8fafc; }
         [data-theme="light"] .border-zinc-800, [data-theme="light"] .border-zinc-700 { border-color: #cbd5e1; }
         [data-theme="light"] .text-white:not(.accent-bg), [data-theme="light"] .text-zinc-100, [data-theme="light"] .text-zinc-200, [data-theme="light"] .text-zinc-300 { color: #1e293b; }
         [data-theme="light"] .text-zinc-400, [data-theme="light"] .text-zinc-500 { color: #64748b; }
+        [data-theme="light"] .accent-bg, [data-theme="light"] .accent-bg * { color: #fff !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans transition-colors duration-200 select-none pb-20">
+<body class="min-h-screen flex flex-col font-sans transition-colors duration-200 pb-24">
 
     <!-- TOP HEADER -->
     <header class="app-header sticky top-0 z-30 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
@@ -89,7 +88,7 @@
             <img id="secretLogoBtn" src="small-icon.png" alt="Logo" class="w-9 h-9 rounded-full object-cover border border-zinc-700 shadow-sm cursor-pointer" title="Tap 3 times for private contacts" />
             <div>
                 <h1 id="appTitleHeader" class="text-base font-bold tracking-tight leading-none text-emerald-400">GRIZZLY CONTACTS</h1>
-                <p class="text-[10px] text-zinc-400 font-medium">Secure Address Book</p>
+                <p id="modeLabel" class="text-[10px] text-zinc-400 font-medium">Secure Address Book</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -119,7 +118,7 @@
     </nav>
 
     <!-- TOAST -->
-    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] hidden px-4 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-xs font-medium shadow-xl border border-zinc-700 max-w-[90vw] text-center"></div>
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[70] hidden px-4 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-xs font-medium shadow-xl border border-zinc-700 max-w-[90vw] items-center gap-3"></div>
 
     <!-- MAIN VIEW AREA -->
     <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-4">
@@ -129,7 +128,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-[200px]">
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
-                    <input type="text" id="searchInput" placeholder="Search contacts by name, number, email..." class="w-full pl-9 pr-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                    <input type="text" id="searchInput" placeholder="Search name, nickname, number, email..." class="w-full pl-9 pr-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
                 </div>
                 <button id="btnViewToggle" aria-label="Switch view" title="Switch list / grid" class="w-9 h-9 flex-shrink-0 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition flex items-center justify-center">
                     <i class="fa-solid fa-grip"></i>
@@ -137,7 +136,9 @@
             </div>
 
             <div class="flex items-center space-x-2 text-xs">
-                <button id="btnSelectAll" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition">Select All</button>
+                <button id="btnSelectMode" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition flex items-center space-x-1">
+                    <i class="fa-regular fa-square-check"></i> <span id="selectModeLabel">Select</span>
+                </button>
                 <button id="btnDuplicateFinder" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-medium transition flex items-center space-x-1" title="Find duplicate contacts">
                     <i class="fa-solid fa-clone"></i> <span class="hidden sm:inline">Duplicates</span>
                 </button>
@@ -174,15 +175,24 @@
 
     </main>
 
+    <!-- BULK ACTION BAR -->
+    <div id="bulkBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden panel-bg border border-zinc-700 rounded-2xl shadow-2xl px-3 py-2 items-center gap-2 text-xs max-w-[96vw]">
+        <span id="bulkCount" class="font-semibold text-zinc-200 px-1 whitespace-nowrap">0 selected</span>
+        <button id="bulkAll" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700">All</button>
+        <button id="bulkGroup" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700" title="Add/remove group"><i class="fa-solid fa-layer-group"></i></button>
+        <button id="bulkExport" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700" title="Export selected as vCard"><i class="fa-solid fa-file-export"></i></button>
+        <button id="bulkDelete" class="px-2.5 py-1.5 rounded-lg bg-red-950 text-red-400 hover:bg-red-900" title="Delete selected"><i class="fa-solid fa-trash"></i></button>
+    </div>
+
     <!-- FOOTER SIGNATURE -->
     <div class="fixed bottom-1 left-0 right-0 z-10 text-center pointer-events-none">
         <p class="text-[10px] font-mono tracking-widest text-zinc-600 uppercase">By REAPER-357</p>
     </div>
 
     <!-- SETTINGS MODAL -->
-    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div id="settingsModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="panel-bg w-full max-w-md rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-5 text-center relative max-h-[90vh] overflow-y-auto">
-            <button class="closeModalBtn absolute top-4 right-4 text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            <button class="closeModalBtn absolute top-4 right-4 text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
 
             <img src="icon.png" alt="Logo" class="w-24 h-24 mx-auto rounded-2xl object-cover border-2 border-zinc-700 shadow-lg mb-1" />
             <h3 class="text-base font-bold text-white">Grizzly Settings</h3>
@@ -191,9 +201,9 @@
             <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
                 <span class="text-xs font-semibold text-zinc-300">Theme</span>
                 <div class="grid grid-cols-3 gap-2">
-                    <button onclick="setAppTheme('black')" class="py-1.5 rounded-xl text-xs bg-zinc-900 border border-zinc-700 text-white">Pure Black</button>
-                    <button onclick="setAppTheme('dark')" class="py-1.5 rounded-xl text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">Dark</button>
-                    <button onclick="setAppTheme('light')" class="py-1.5 rounded-xl text-xs bg-slate-200 border border-slate-300 text-slate-800">Light</button>
+                    <button data-theme-pick="black" class="py-1.5 rounded-xl text-xs bg-zinc-900 border border-zinc-700 text-white">Pure Black</button>
+                    <button data-theme-pick="dark" class="py-1.5 rounded-xl text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">Dark</button>
+                    <button data-theme-pick="light" class="py-1.5 rounded-xl text-xs bg-slate-200 border border-slate-300 text-slate-800">Light</button>
                 </div>
             </div>
 
@@ -201,41 +211,72 @@
             <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
                 <span class="text-xs font-semibold text-zinc-300">Accent Color</span>
                 <div class="flex items-center justify-around pt-1">
-                    <button onclick="setAccentColor('#10b981')" class="w-7 h-7 rounded-full bg-emerald-500 shadow"></button>
-                    <button onclick="setAccentColor('#ef4444')" class="w-7 h-7 rounded-full bg-red-500 shadow"></button>
-                    <button onclick="setAccentColor('#3b82f6')" class="w-7 h-7 rounded-full bg-blue-500 shadow"></button>
-                    <button onclick="setAccentColor('#a855f7')" class="w-7 h-7 rounded-full bg-purple-500 shadow"></button>
-                    <button onclick="setAccentColor('#f59e0b')" class="w-7 h-7 rounded-full bg-amber-500 shadow"></button>
+                    <button data-accent="#10b981" aria-label="Green" class="w-7 h-7 rounded-full bg-emerald-500 shadow"></button>
+                    <button data-accent="#ef4444" aria-label="Red" class="w-7 h-7 rounded-full bg-red-500 shadow"></button>
+                    <button data-accent="#3b82f6" aria-label="Blue" class="w-7 h-7 rounded-full bg-blue-500 shadow"></button>
+                    <button data-accent="#a855f7" aria-label="Purple" class="w-7 h-7 rounded-full bg-purple-500 shadow"></button>
+                    <button data-accent="#f59e0b" aria-label="Amber" class="w-7 h-7 rounded-full bg-amber-500 shadow"></button>
                 </div>
             </div>
 
             <!-- Cloud Webhook Sync -->
             <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
-                <span class="font-semibold text-zinc-300">Cloud Webhook (Excel / XLSX Backup)</span>
-                <p class="text-[10px] text-zinc-400">Automatically syncs contacts backup as spreadsheet data to your cloud endpoint when modified.</p>
-                <input type="text" id="webhookUrlInput" placeholder="https://your-cloud-webhook.com/endpoint" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
-                <button id="btnTestWebhook" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-xl transition">Sync / Trigger Webhook Now</button>
+                <span class="font-semibold text-zinc-300">Cloud Webhook (JSON backup)</span>
+                <p class="text-[10px] text-zinc-400">Sends a backup shortly after you change something. Private contacts, and contacts in groups with Sync turned off, are never sent.</p>
+                <input type="url" id="webhookUrlInput" placeholder="https://your-cloud-webhook.com/endpoint" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <p id="webhookStatus" class="text-[10px] text-zinc-500">Never synced.</p>
+                <button id="btnTestWebhook" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-xl transition">Sync Now</button>
             </div>
 
-            <!-- Export / Safe Import -->
+            <!-- Export / Import -->
             <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
                 <span class="font-semibold text-zinc-300">Data Management</span>
                 <div class="flex gap-2">
                     <button id="btnExportJson" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl">Export JSON</button>
                     <label class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-center cursor-pointer">
-                        Safe Import <input type="file" id="importJsonInput" accept=".json" class="hidden">
+                        Safe Import <input type="file" id="importJsonInput" accept=".json,application/json" class="hidden">
                     </label>
                 </div>
+                <div class="flex gap-2">
+                    <button id="btnExportVcf" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl">Export vCard</button>
+                    <label class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-center cursor-pointer">
+                        Import vCard <input type="file" id="importVcfInput" accept=".vcf,text/vcard,text/x-vcard" class="hidden">
+                    </label>
+                </div>
+                <p class="text-[10px] text-zinc-500">Exports include only the contacts of the mode you're in (private contacts only while unlocked).</p>
+            </div>
+
+            <!-- PIN -->
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
+                <span class="font-semibold text-zinc-300">Private PIN</span>
+                <p id="pinHint" class="text-[10px] text-zinc-400"></p>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="password" inputmode="numeric" id="curPinInput" maxlength="8" placeholder="Current PIN" class="px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                    <input type="password" inputmode="numeric" id="newPinInput" maxlength="8" placeholder="New PIN (4-8 digits)" class="px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                </div>
+                <button id="btnChangePin" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-xl transition">Change PIN</button>
+                <p class="text-[10px] text-zinc-500">Private contacts lock automatically when you leave the app or switch tabs.</p>
             </div>
         </div>
     </div>
 
+    <!-- CONTACT DETAIL MODAL -->
+    <div id="detailModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-md rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Contact</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="detailBody" class="space-y-4"></div>
+        </div>
+    </div>
+
     <!-- CONTACT EDIT / CREATE MODAL -->
-    <div id="contactModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div id="contactModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="panel-bg w-full max-w-lg rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <h3 id="contactModalTitle" class="text-base font-bold text-white">Add Contact</h3>
-                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <input type="hidden" id="editingContactId" value="">
 
@@ -266,7 +307,6 @@
                 <input type="date" id="cBday" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white">
             </div>
 
-            <!-- Phone Numbers Section -->
             <div class="space-y-2 border-t border-zinc-800 pt-3">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold text-zinc-300">Phone Numbers</span>
@@ -275,7 +315,6 @@
                 <div id="phoneFieldsContainer" class="space-y-2"></div>
             </div>
 
-            <!-- Emails Section -->
             <div class="space-y-2 border-t border-zinc-800 pt-3">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold text-zinc-300">Email Addresses</span>
@@ -284,7 +323,6 @@
                 <div id="emailFieldsContainer" class="space-y-2"></div>
             </div>
 
-            <!-- Groups Assignment -->
             <div class="border-t border-zinc-800 pt-3 space-y-1">
                 <label class="block text-xs font-semibold text-zinc-300">Assign to Groups</label>
                 <div id="contactGroupsCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
@@ -303,11 +341,11 @@
     </div>
 
     <!-- GROUP EDIT / CREATE MODAL -->
-    <div id="groupModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div id="groupModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="panel-bg w-full max-w-sm rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <h3 id="groupModalTitle" class="text-base font-bold text-white">Create Group</h3>
-                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <input type="hidden" id="editingGroupId" value="">
             <div>
@@ -321,7 +359,7 @@
             <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-zinc-800">
                 <div>
                     <span class="text-xs font-semibold text-white block">Allow 3rd Party Sync</span>
-                    <span class="text-[10px] text-zinc-400">Permit Telegram, Facebook, etc. to access</span>
+                    <span class="text-[10px] text-zinc-400">Include this group's contacts in cloud backups</span>
                 </div>
                 <input type="checkbox" id="gSyncToggle" class="w-5 h-5 rounded cursor-pointer">
             </div>
@@ -332,15 +370,30 @@
         </div>
     </div>
 
+    <!-- BULK GROUP MODAL -->
+    <div id="bulkGroupModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-xs rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-bold text-white">Bulk Group</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <select id="bulkGroupSelect" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white"></select>
+            <div class="flex gap-2">
+                <button id="bulkGroupAdd" class="flex-1 py-2 text-xs font-semibold accent-bg text-white rounded-xl">Add to group</button>
+                <button id="bulkGroupRemove" class="flex-1 py-2 text-xs font-semibold bg-zinc-800 text-white rounded-xl">Remove</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SECRET PIN MODAL -->
-    <div id="pinModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div id="pinModal" class="modal fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="panel-bg w-full max-w-xs rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 bg-emerald-950 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl">
                 <i class="fa-solid fa-lock"></i>
             </div>
             <h3 class="text-base font-bold text-white">Private Contacts</h3>
-            <p class="text-xs text-zinc-400">Enter your 4-digit PIN (default: 1234)</p>
-            <input type="password" id="pinInput" maxlength="4" placeholder="••••" class="w-32 text-center tracking-widest text-lg mx-auto py-2 bg-black border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-emerald-500">
+            <p id="pinPrompt" class="text-xs text-zinc-400">Enter your PIN</p>
+            <input type="password" inputmode="numeric" id="pinInput" maxlength="8" placeholder="••••" class="w-32 text-center tracking-widest text-lg mx-auto py-2 bg-black border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-emerald-500">
             <div class="flex justify-center space-x-2 pt-2">
                 <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Cancel</button>
                 <button id="btnSubmitPin" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow">Unlock</button>
@@ -349,13 +402,13 @@
     </div>
 
     <!-- DUPLICATE RESOLUTION MODAL -->
-    <div id="duplicateModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div id="duplicateModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="panel-bg w-full max-w-md rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 text-left max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <h3 class="text-base font-bold text-amber-400"><i class="fa-solid fa-clone mr-1"></i> Duplicate Finder</h3>
-                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-zinc-400">Identical matches found by Name, Phone, or Email.</p>
+            <p class="text-xs text-zinc-400">Contacts sharing a name, phone number or email. Merging combines their details into one contact; the extras go to the Recycle Bin.</p>
             <div id="duplicateListContainer" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1"></div>
             <div class="flex justify-end pt-2">
                 <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl text-white">Close</button>
@@ -363,89 +416,126 @@
         </div>
     </div>
 
-    <!-- APPLICATION LOGIC SCRIPT -->
     <script>
-        /* ---------- State Management ---------- */
-        let contacts = safeParse(localStorage.getItem('grizzly_contacts'), []);
-        let groups = safeParse(localStorage.getItem('grizzly_groups'), [
+        /* ---------- Utility Helpers ---------- */
+        function safeParse(str, fallback) {
+            try { const v = str ? JSON.parse(str) : fallback; return v == null ? fallback : v; } catch (e) { return fallback; }
+        }
+        function escapeHtml(str) {
+            return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function uid(prefix) { return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+        function cleanId(id) { return String(id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40); }
+        function digits(s) { return String(s || '').replace(/\D/g, ''); }
+        function fullName(c) { return [c.first, c.middle, c.last].filter(Boolean).join(' ').trim(); }
+        function nameKey(c) { return [c.first, c.last].filter(Boolean).join(' ').trim().toLowerCase().replace(/\s+/g, ' '); }
+        function initials(c) { return ((c.first || '')[0] || '') + ((c.last || '')[0] || ''); }
+        function $(id) { return document.getElementById(id); }
+
+        /* ---------- State ---------- */
+        const DEFAULT_GROUPS = [
             { id: 'g1', name: 'Family', notes: 'Close relatives', allowSync: true },
             { id: 'g2', name: 'Work', notes: 'Colleagues', allowSync: true },
             { id: 'g3', name: 'Mechanic', notes: 'Do not share', allowSync: false },
             { id: 'g4', name: 'Dentist', notes: 'Do not share', allowSync: false }
-        ]);
+        ];
+        let contacts = safeParse(localStorage.getItem('grizzly_contacts'), []);
+        let groups = safeParse(localStorage.getItem('grizzly_groups'), DEFAULT_GROUPS);
         let recycleBin = safeParse(localStorage.getItem('grizzly_bin'), []);
-        
-        let viewMode = 'list'; // 'list' or 'grid'
+        if (!Array.isArray(contacts)) contacts = [];
+        if (!Array.isArray(groups)) groups = DEFAULT_GROUPS;
+        if (!Array.isArray(recycleBin)) recycleBin = [];
+
+        let viewMode = 'list';
         let currentTab = 'all';
         let isPrivateMode = false;
+        let selectMode = false;
+        let selected = new Set();
+        let dupClusters = [];
         let secretClickCount = 0;
         let secretClickTimer = null;
 
-        /* ---------- Utility Helpers ---------- */
-        function safeParse(str, fallback) {
-            try { return str ? JSON.parse(str) : fallback; } catch (e) { return fallback; }
-        }
-
-        function escapeHtml(str) {
-            return String(str == null ? '' : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        }
-
+        /* ---------- Toast (with optional action, e.g. Undo) ---------- */
         let toastTimer = null;
-        function showToast(msg) {
-            const toastEl = document.getElementById('toast');
-            toastEl.textContent = msg;
-            toastEl.classList.remove('hidden');
+        function showToast(msg, action) {
+            const t = $('toast');
+            t.innerHTML = '';
+            const span = document.createElement('span');
+            span.textContent = msg;
+            t.appendChild(span);
+            if (action) {
+                const b = document.createElement('button');
+                b.textContent = action.label;
+                b.className = 'accent-text font-bold uppercase text-[11px]';
+                b.addEventListener('click', () => { t.classList.add('hidden'); t.classList.remove('flex'); action.fn(); });
+                t.appendChild(b);
+            }
+            t.classList.remove('hidden'); t.classList.add('flex');
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 2600);
+            toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, action ? 6000 : 2600);
         }
 
-        function persistData() {
-            localStorage.setItem('grizzly_contacts', JSON.stringify(contacts));
-            localStorage.setItem('grizzly_groups', JSON.stringify(groups));
-            localStorage.setItem('grizzly_bin', JSON.stringify(recycleBin));
-            triggerWebhookBackup();
+        /* ---------- Persistence ---------- */
+        function persistData(opts) {
+            try {
+                localStorage.setItem('grizzly_contacts', JSON.stringify(contacts));
+                localStorage.setItem('grizzly_groups', JSON.stringify(groups));
+                localStorage.setItem('grizzly_bin', JSON.stringify(recycleBin));
+            } catch (e) {
+                showToast('Storage full or blocked - changes may not be saved');
+            }
+            if (!(opts && opts.noSync)) scheduleSync();
         }
 
-        /* ---------- Webhook Cloud Sync ---------- */
-        function triggerWebhookBackup() {
-            const webhookUrl = document.getElementById('webhookUrlInput').value.trim();
-            if (!webhookUrl) return;
-            
+        /* ---------- Webhook backup (debounced, respects privacy + group flags) ---------- */
+        let syncTimer = null;
+        function webhookUrl() { return $('webhookUrlInput').value.trim(); }
+        function validWebhook(u) { return /^https?:\/\/\S+$/i.test(u); }
+
+        function sharableData() {
+            const blocked = new Set(groups.filter(g => !g.allowSync).map(g => g.id));
+            const list = contacts.filter(c => !c.private && !(c.groupIds || []).some(id => blocked.has(id)));
+            return { contacts: list, groups: groups.filter(g => g.allowSync) };
+        }
+
+        function updateWebhookStatus() {
+            const ts = localStorage.getItem('grizzly_webhook_last');
+            $('webhookStatus').textContent = ts ? 'Last synced: ' + new Date(ts).toLocaleString() : 'Never synced.';
+        }
+
+        function scheduleSync() {
+            if (!validWebhook(webhookUrl())) return;
+            clearTimeout(syncTimer);
+            syncTimer = setTimeout(() => runSync(false), 2000);
+        }
+
+        function runSync(manual) {
+            const url = webhookUrl();
+            if (!validWebhook(url)) { if (manual) showToast('Enter a valid http(s) webhook URL first'); return; }
+            const data = sharableData();
             const payload = {
                 timestamp: new Date().toISOString(),
-                app: "Grizzly Contacts",
-                totalContacts: contacts.length,
-                contacts: contacts,
-                groups: groups
+                app: 'Grizzly Contacts',
+                totalContacts: data.contacts.length,
+                contacts: data.contacts,
+                groups: data.groups
             };
-
-            fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(res => {
-                if(res.ok) showToast('Cloud Webhook Synced Successfully!');
-            }).catch(err => console.error('Webhook sync failed', err));
+            // text/plain + no-cors avoids a CORS preflight, which most simple webhooks (e.g. Apps Script) cannot answer
+            fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+                .then(() => {
+                    localStorage.setItem('grizzly_webhook_last', new Date().toISOString());
+                    updateWebhookStatus();
+                    if (manual) showToast('Backup sent (' + data.contacts.length + ' contacts)');
+                })
+                .catch(err => { console.error('Webhook sync failed', err); if (manual) showToast('Webhook request failed'); });
         }
-
-        document.getElementById('webhookUrlInput').addEventListener('input', (e) => {
-            localStorage.setItem('grizzly_webhook', e.target.value);
-        });
-
-        document.getElementById('btnTestWebhook').addEventListener('click', () => {
-            const url = document.getElementById('webhookUrlInput').value.trim();
-            if(!url) return alert('Please enter a webhook URL first.');
-            triggerWebhookBackup();
-            showToast('Webhook trigger sent.');
-        });
 
         /* ---------- Theme & Preferences ---------- */
         function setAccentColor(hex) {
             localStorage.setItem('gc_accent_color', hex);
             document.documentElement.style.setProperty('--accent-color', hex);
-            document.getElementById('appTitleHeader').style.color = hex;
+            $('appTitleHeader').style.color = hex;
         }
-
         function setAppTheme(theme) {
             if (!['black', 'dark', 'light'].includes(theme)) theme = 'black';
             localStorage.setItem('gc_app_theme', theme);
@@ -453,22 +543,62 @@
             document.documentElement.classList.toggle('dark', theme !== 'light');
             document.querySelector('meta[name="theme-color"]').setAttribute('content', { black: '#000000', dark: '#0f172a', light: '#f1f5f9' }[theme]);
         }
-
         function initPreferences() {
             setAccentColor(localStorage.getItem('gc_accent_color') || '#10b981');
             setAppTheme(localStorage.getItem('gc_app_theme') || 'black');
             const savedWebhook = localStorage.getItem('grizzly_webhook');
-            if(savedWebhook) document.getElementById('webhookUrlInput').value = savedWebhook;
+            if (savedWebhook) $('webhookUrlInput').value = savedWebhook;
+            updateWebhookStatus();
+            updatePinHint();
         }
 
-        /* ---------- Initialization & Navigation ---------- */
-        window.addEventListener('DOMContentLoaded', () => {
-            initPreferences();
-            setupTabs();
-            setupSecretTrigger();
-            renderAllViews();
-        });
+        /* ---------- Recycle bin helpers ---------- */
+        function purgeOldBin() {
+            const before = recycleBin.length;
+            const now = Date.now();
+            recycleBin = recycleBin.filter(item => {
+                const t = new Date(item.deletedAt).getTime();
+                return !isNaN(t) && (now - t) <= 30 * 86400000;
+            });
+            if (recycleBin.length !== before) persistData({ noSync: true });
+        }
 
+        function deleteContacts(ids, quiet) {
+            const moved = [];
+            ids.forEach(id => {
+                const idx = contacts.findIndex(x => x.id === id);
+                if (idx !== -1) {
+                    const item = contacts.splice(idx, 1)[0];
+                    item.deletedAt = new Date().toISOString();
+                    recycleBin.push(item);
+                    selected.delete(id);
+                    moved.push(id);
+                }
+            });
+            if (!moved.length) return;
+            persistData();
+            renderCurrentTab();
+            if (!quiet) {
+                showToast(moved.length === 1 ? 'Contact moved to Recycle Bin' : moved.length + ' contacts moved to Recycle Bin',
+                    { label: 'Undo', fn: () => restoreContacts(moved) });
+            }
+        }
+
+        function restoreContacts(ids) {
+            let n = 0;
+            ids.forEach(id => {
+                const idx = recycleBin.findIndex(x => x.id === id);
+                if (idx !== -1) {
+                    const item = recycleBin.splice(idx, 1)[0];
+                    delete item.deletedAt;
+                    contacts.push(item);
+                    n++;
+                }
+            });
+            if (n) { persistData(); renderCurrentTab(); showToast(n === 1 ? 'Contact restored' : n + ' contacts restored'); }
+        }
+
+        /* ---------- Navigation ---------- */
         function setupTabs() {
             const tabs = document.querySelectorAll('#navTabs button');
             tabs.forEach(tab => {
@@ -479,131 +609,193 @@
                     });
                     tab.classList.add('active', 'border-b-2', 'accent-text', 'font-semibold');
                     tab.classList.remove('text-zinc-400', 'font-medium');
-
                     currentTab = tab.getAttribute('data-tab');
                     document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
-                    document.getElementById(`view-${currentTab}`).classList.remove('hidden');
+                    $('view-' + currentTab).classList.remove('hidden');
                     renderCurrentTab();
                 });
             });
-            document.getElementById('searchInput').addEventListener('input', renderCurrentTab);
-            document.getElementById('btnViewToggle').addEventListener('click', () => {
+            $('searchInput').addEventListener('input', renderCurrentTab);
+            $('btnViewToggle').addEventListener('click', () => {
                 viewMode = viewMode === 'list' ? 'grid' : 'list';
-                document.getElementById('btnViewToggle').innerHTML = viewMode === 'grid' ? '<i class="fa-solid fa-list"></i>' : '<i class="fa-solid fa-grip"></i>';
+                $('btnViewToggle').innerHTML = viewMode === 'grid' ? '<i class="fa-solid fa-list"></i>' : '<i class="fa-solid fa-grip"></i>';
                 renderCurrentTab();
             });
         }
 
-        function setupSecretTrigger() {
-            document.getElementById('secretLogoBtn').addEventListener('click', () => {
-                secretClickCount++;
-                clearTimeout(secretClickTimer);
-                secretClickTimer = setTimeout(() => { secretClickCount = 0; }, 1000);
-                if (secretClickCount >= 3) {
-                    secretClickCount = 0;
-                    document.getElementById('pinModal').classList.remove('hidden');
-                }
-            });
-
-            document.getElementById('btnSubmitPin').addEventListener('click', () => {
-                const pin = document.getElementById('pinInput').value;
-                if (pin === '1234') {
-                    isPrivateMode = !isPrivateMode;
-                    document.getElementById('pinModal').classList.add('hidden');
-                    document.getElementById('pinInput').value = '';
-                    showToast(isPrivateMode ? 'Private Contacts Unlocked 🔓' : 'Locked standard mode');
-                    renderCurrentTab();
-                } else {
-                    alert('Incorrect PIN!');
-                }
-            });
-        }
-
         function renderCurrentTab() {
+            $('toolbar').classList.toggle('hidden', currentTab === 'bin');
+            updateBulkBar();
             if (currentTab === 'all') renderContactsView();
             else if (currentTab === 'groups') renderGroupsView();
             else if (currentTab === 'bin') renderBinView();
         }
 
-        function renderAllViews() {
-            renderCurrentTab();
+        /* ---------- PIN / Private mode ---------- */
+        async function hashPin(pin) {
+            const s = 'grizzly-pin:' + pin;
+            try {
+                if (window.crypto && crypto.subtle) {
+                    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+                    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            } catch (e) { /* fall through */ }
+            let h = 5381;
+            for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+            return 'f' + (h >>> 0).toString(16);
+        }
+        async function checkPin(pin) {
+            const stored = localStorage.getItem('gc_pin_hash');
+            if (!stored) return pin === '1234';
+            return (await hashPin(pin)) === stored;
+        }
+        function updatePinHint() {
+            $('pinHint').textContent = localStorage.getItem('gc_pin_hash')
+                ? 'Your custom PIN is set.'
+                : 'Still using the default PIN (1234). Set your own below.';
+            $('pinPrompt').textContent = localStorage.getItem('gc_pin_hash') ? 'Enter your PIN' : 'Enter your PIN (default: 1234)';
         }
 
-        /* ---------- Contacts Rendering (All & Favorites) ---------- */
-        function renderContactsView() {
-            const container = document.getElementById('contactsList');
-            container.innerHTML = '';
-            const filter = document.getElementById('searchInput').value.toLowerCase().trim();
+        function setPrivateMode(on) {
+            isPrivateMode = on;
+            selected.clear();
+            selectMode = false;
+            $('selectModeLabel').textContent = 'Select';
+            $('modeLabel').textContent = on ? 'Private contacts' : 'Secure Address Book';
+            if (on) $('modeLabel').classList.add('accent-text'); else $('modeLabel').classList.remove('accent-text');
+            renderCurrentTab();
+        }
+        function lockPrivate(silent) {
+            if (!isPrivateMode) return;
+            closeAllModals();
+            setPrivateMode(false);
+            if (!silent) showToast('Locked standard mode');
+        }
 
+        let pinFails = 0, pinLockUntil = 0;
+        function setupSecretTrigger() {
+            $('secretLogoBtn').addEventListener('click', () => {
+                secretClickCount++;
+                clearTimeout(secretClickTimer);
+                secretClickTimer = setTimeout(() => { secretClickCount = 0; }, 1000);
+                if (secretClickCount >= 3) {
+                    secretClickCount = 0;
+                    if (isPrivateMode) { lockPrivate(); return; }
+                    updatePinHint();
+                    $('pinInput').value = '';
+                    $('pinModal').classList.remove('hidden');
+                    $('pinInput').focus();
+                }
+            });
+            const submit = async () => {
+                if (Date.now() < pinLockUntil) { showToast('Too many attempts - wait ' + Math.ceil((pinLockUntil - Date.now()) / 1000) + 's'); return; }
+                const pin = $('pinInput').value;
+                if (await checkPin(pin)) {
+                    pinFails = 0;
+                    $('pinModal').classList.add('hidden');
+                    $('pinInput').value = '';
+                    setPrivateMode(true);
+                    showToast('Private Contacts Unlocked');
+                } else {
+                    pinFails++;
+                    $('pinInput').value = '';
+                    if (pinFails >= 5) { pinLockUntil = Date.now() + 30000; pinFails = 0; showToast('Too many attempts - locked for 30s'); }
+                    else showToast('Incorrect PIN');
+                }
+            };
+            $('btnSubmitPin').addEventListener('click', submit);
+            $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+
+            $('btnChangePin').addEventListener('click', async () => {
+                const cur = $('curPinInput').value, nw = $('newPinInput').value;
+                if (!/^\d{4,8}$/.test(nw)) return showToast('New PIN must be 4-8 digits');
+                if (!(await checkPin(cur))) return showToast('Current PIN is incorrect');
+                localStorage.setItem('gc_pin_hash', await hashPin(nw));
+                $('curPinInput').value = ''; $('newPinInput').value = '';
+                updatePinHint();
+                showToast('PIN updated');
+            });
+
+            // Auto-lock when the app is hidden / tab switched
+            document.addEventListener('visibilitychange', () => { if (document.hidden) lockPrivate(true); });
+        }
+
+        /* ---------- Contacts view ---------- */
+        function visibleContacts() {
             let list = contacts.filter(c => !!c.private === isPrivateMode);
-            
-            if (filter) {
-                list = list.filter(c => 
-                    `${c.first} ${c.middle} ${c.last}`.toLowerCase().includes(filter) ||
-                    (c.phones || []).some(p => p.number.includes(filter)) ||
-                    (c.emails || []).some(e => e.address.toLowerCase().includes(filter))
+            const raw = $('searchInput').value.toLowerCase().trim();
+            if (raw) {
+                const qd = digits(raw);
+                list = list.filter(c =>
+                    [c.first, c.middle, c.last, c.nick].filter(Boolean).join(' ').toLowerCase().includes(raw) ||
+                    (qd && (c.phones || []).some(p => digits(p.number).includes(qd))) ||
+                    (c.phones || []).some(p => String(p.number).toLowerCase().includes(raw)) ||
+                    (c.emails || []).some(e => String(e.address).toLowerCase().includes(raw))
                 );
             }
-
-            // Alphabetical sorting
-            list.sort((a, b) => (a.first || '').localeCompare(b.first || ''));
-
-            // Favorites pinned to top
+            list.sort((a, b) => fullName(a).localeCompare(fullName(b)));
             list.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+            return list;
+        }
+
+        function renderContactsView() {
+            const container = $('contactsList');
+            container.innerHTML = '';
+            const list = visibleContacts();
 
             if (!list.length) {
-                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">No contacts found.</div>`;
+                container.className = '';
+                container.innerHTML = '<div class="text-center py-12 text-zinc-500 text-xs">No contacts found.</div>';
                 return;
             }
-
             container.className = viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 gap-3' : 'space-y-1.5';
 
             const frag = document.createDocumentFragment();
             list.forEach(c => {
-                const primaryPhone = (c.phones || []).find(p => p.isDefault) || c.phones?.[0] || { number: 'No number' };
-                const primaryEmail = (c.emails || []).find(e => e.isDefault) || c.emails?.[0] || { address: '' };
-                const fullName = `${c.first || ''} ${c.middle || ''} ${c.last || ''}`.trim();
-
+                const primaryPhone = (c.phones || []).find(p => p.isDefault) || (c.phones || [])[0] || { number: 'No number' };
+                const primaryEmail = (c.emails || []).find(e => e.isDefault) || (c.emails || [])[0] || { address: '' };
+                const name = fullName(c);
+                const isSel = selected.has(c.id);
                 const card = document.createElement('div');
+                const chk = selectMode ? `<input type="checkbox" ${isSel ? 'checked' : ''} data-action="toggleSel" data-id="${escapeHtml(c.id)}" class="w-4 h-4 flex-shrink-0 rounded cursor-pointer">` : '';
+
                 if (viewMode === 'grid') {
-                    card.className = `panel-bg p-3 rounded-2xl border border-zinc-800 flex flex-col justify-between space-y-2 relative`;
+                    card.className = 'panel-bg p-3 rounded-2xl border border-zinc-800 flex flex-col justify-between space-y-2 relative ' + (isSel ? 'row-selected' : '');
                     card.innerHTML = `
                         <div class="flex items-start justify-between">
-                            <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-sm uppercase">
-                                ${(c.first?.[0] || '') + (c.last?.[0] || '')}
+                            <div class="flex items-center gap-2">
+                                ${chk}
+                                <div data-action="open" data-id="${escapeHtml(c.id)}" class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-sm uppercase cursor-pointer">${escapeHtml(initials(c))}</div>
                             </div>
-                            <button onclick="toggleFavorite('${c.id}')" class="text-xs ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
+                            <button data-action="fav" data-id="${escapeHtml(c.id)}" aria-label="Toggle favorite" class="text-xs ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
                         </div>
-                        <div>
-                            <h4 class="text-xs font-bold truncate text-white">${escapeHtml(fullName)}</h4>
+                        <div data-action="open" data-id="${escapeHtml(c.id)}" class="cursor-pointer min-w-0">
+                            <h4 class="text-xs font-bold truncate text-white">${escapeHtml(name)}</h4>
                             <p class="text-[11px] text-zinc-400 truncate">${escapeHtml(primaryPhone.number)}</p>
                         </div>
                         <div class="flex justify-end space-x-2 pt-1 border-t border-zinc-800/60 text-xs">
-                            <button onclick="openEditContact('${c.id}')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteContact('${c.id}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
+                            <button data-action="edit" data-id="${escapeHtml(c.id)}" aria-label="Edit" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-pen"></i></button>
+                            <button data-action="del" data-id="${escapeHtml(c.id)}" aria-label="Delete" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>`;
                 } else {
-                    card.className = `panel-bg p-3 rounded-xl border border-zinc-800 flex items-center justify-between space-x-3`;
+                    card.className = 'panel-bg p-3 rounded-xl border border-zinc-800 flex items-center justify-between space-x-3 ' + (isSel ? 'row-selected' : '');
                     card.innerHTML = `
-                        <div class="flex items-center space-x-3 min-w-0 flex-1">
-                            <div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-xs uppercase flex-shrink-0">
-                                ${(c.first?.[0] || '') + (c.last?.[0] || '')}
-                            </div>
+                        <div data-action="open" data-id="${escapeHtml(c.id)}" class="flex items-center space-x-3 min-w-0 flex-1 cursor-pointer">
+                            ${chk}
+                            <div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-xs uppercase flex-shrink-0">${escapeHtml(initials(c))}</div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center space-x-2">
-                                    <h4 class="text-xs font-bold truncate text-white">${escapeHtml(fullName)}</h4>
+                                    <h4 class="text-xs font-bold truncate text-white">${escapeHtml(name)}</h4>
                                     ${c.favorite ? '<i class="fa-solid fa-star text-amber-400 text-[10px]"></i>' : ''}
                                 </div>
-                                <p class="text-[11px] text-zinc-400 truncate">${escapeHtml(primaryPhone.number)} ${primaryEmail.address ? '• ' + escapeHtml(primaryEmail.address) : ''}</p>
+                                <p class="text-[11px] text-zinc-400 truncate">${escapeHtml(primaryPhone.number)} ${primaryEmail.address ? '&bull; ' + escapeHtml(primaryEmail.address) : ''}</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2 text-xs flex-shrink-0">
-                            <button onclick="toggleFavorite('${c.id}')" class="p-2 ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
-                            <button onclick="openEditContact('${c.id}')" class="p-2 text-zinc-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteContact('${c.id}')" class="p-2 text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
+                        <div class="flex items-center space-x-1 text-xs flex-shrink-0">
+                            <button data-action="fav" data-id="${escapeHtml(c.id)}" aria-label="Toggle favorite" class="p-2 ${c.favorite ? 'text-amber-400' : 'text-zinc-600'}"><i class="fa-solid fa-star"></i></button>
+                            <button data-action="edit" data-id="${escapeHtml(c.id)}" aria-label="Edit" class="p-2 text-zinc-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+                            <button data-action="del" data-id="${escapeHtml(c.id)}" aria-label="Delete" class="p-2 text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                        </div>`;
                 }
                 frag.appendChild(card);
             });
@@ -612,184 +804,202 @@
 
         function toggleFavorite(id) {
             const c = contacts.find(x => x.id === id);
-            if (c) {
-                c.favorite = !c.favorite;
-                persistData();
-                renderCurrentTab();
-            }
+            if (c) { c.favorite = !c.favorite; persistData(); renderCurrentTab(); }
         }
 
-        function deleteContact(id) {
-            const idx = contacts.findIndex(x => x.id === id);
-            if (idx !== -1) {
-                const item = contacts.splice(idx, 1)[0];
-                item.deletedAt = new Date().toISOString();
-                recycleBin.push(item);
-                persistData();
-                renderCurrentTab();
-                showToast('Contact moved to Recycle Bin');
-            }
+        /* ---------- Contact detail (tap to call / SMS / email / WhatsApp / copy) ---------- */
+        function copyText(text) {
+            const done = () => showToast('Copied');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+            } else fallbackCopy(text, done);
+        }
+        function fallbackCopy(text, done) {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); done(); } catch (e) { showToast('Copy failed'); }
+            ta.remove();
         }
 
-        /* ---------- Groups Tab ---------- */
+        function openDetail(id) {
+            const c = contacts.find(x => x.id === id);
+            if (!c) return;
+            const btn = 'w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center text-sm';
+            const phones = (c.phones || []).map(p => {
+                const tel = String(p.number).replace(/[^\d+]/g, '');
+                const wa = digits(p.number);
+                return `<div class="flex items-center justify-between gap-2 bg-black/30 border border-zinc-800 rounded-xl p-2.5">
+                    <div class="min-w-0">
+                        <p class="text-sm text-white truncate">${escapeHtml(p.number)}</p>
+                        <p class="text-[10px] text-zinc-500">${escapeHtml(p.tag || '')}${p.isDefault ? ' &bull; default' : ''}</p>
+                    </div>
+                    <div class="flex gap-1.5 flex-shrink-0">
+                        <a href="tel:${escapeHtml(tel)}" class="${btn}" aria-label="Call"><i class="fa-solid fa-phone"></i></a>
+                        <a href="sms:${escapeHtml(tel)}" class="${btn}" aria-label="SMS"><i class="fa-solid fa-message"></i></a>
+                        ${wa ? `<a href="https://wa.me/${escapeHtml(wa)}" target="_blank" rel="noopener noreferrer" class="${btn}" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+                        <button data-action="copy" data-text="${escapeHtml(p.number)}" class="${btn}" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+            const emails = (c.emails || []).map(e => `
+                <div class="flex items-center justify-between gap-2 bg-black/30 border border-zinc-800 rounded-xl p-2.5">
+                    <div class="min-w-0">
+                        <p class="text-sm text-white truncate">${escapeHtml(e.address)}</p>
+                        <p class="text-[10px] text-zinc-500">${escapeHtml(e.tag || '')}${e.isDefault ? ' &bull; default' : ''}</p>
+                    </div>
+                    <div class="flex gap-1.5 flex-shrink-0">
+                        <a href="mailto:${escapeHtml(e.address)}" class="${btn}" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
+                        <button data-action="copy" data-text="${escapeHtml(e.address)}" class="${btn}" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>`).join('');
+            const gNames = (c.groupIds || []).map(gid => groups.find(g => g.id === gid)).filter(Boolean)
+                .map(g => `<span class="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full">${escapeHtml(g.name)}</span>`).join('');
+
+            $('detailBody').innerHTML = `
+                <div class="text-center space-y-1">
+                    <div class="w-16 h-16 mx-auto rounded-full bg-zinc-800 flex items-center justify-center text-zinc-200 font-bold text-xl uppercase">${escapeHtml(initials(c))}</div>
+                    <h2 class="text-base font-bold text-white">${escapeHtml(fullName(c))}</h2>
+                    ${c.nick ? `<p class="text-xs text-zinc-400">"${escapeHtml(c.nick)}"</p>` : ''}
+                    ${c.bday ? `<p class="text-[11px] text-zinc-500"><i class="fa-solid fa-cake-candles"></i> ${escapeHtml(c.bday)}</p>` : ''}
+                </div>
+                ${phones ? `<div class="space-y-1.5">${phones}</div>` : ''}
+                ${emails ? `<div class="space-y-1.5">${emails}</div>` : ''}
+                ${gNames ? `<div class="flex flex-wrap gap-1.5">${gNames}</div>` : ''}
+                ${c.notes ? `<div class="text-xs text-zinc-300 bg-black/30 border border-zinc-800 rounded-xl p-2.5 whitespace-pre-wrap">${escapeHtml(c.notes)}</div>` : ''}
+                <div class="flex gap-2 pt-1">
+                    <button data-action="edit" data-id="${escapeHtml(c.id)}" class="flex-1 py-2 text-xs font-semibold accent-bg text-white rounded-xl">Edit</button>
+                    <button data-action="vcf1" data-id="${escapeHtml(c.id)}" class="flex-1 py-2 text-xs font-semibold bg-zinc-800 text-white rounded-xl">Export vCard</button>
+                </div>`;
+            $('detailModal').classList.remove('hidden');
+        }
+
+        /* ---------- Multi-select / bulk ---------- */
+        function updateBulkBar() {
+            const show = selectMode && currentTab === 'all';
+            $('bulkBar').classList.toggle('hidden', !show);
+            $('bulkBar').classList.toggle('flex', show);
+            $('bulkCount').textContent = selected.size + ' selected';
+        }
+        function setSelectMode(on) {
+            selectMode = on;
+            if (!on) selected.clear();
+            $('selectModeLabel').textContent = on ? 'Cancel' : 'Select';
+            renderCurrentTab();
+        }
+
+        /* ---------- Groups tab ---------- */
         function renderGroupsView() {
-            const container = document.getElementById('groupsContainer');
+            const container = $('groupsContainer');
             container.innerHTML = '';
-            const filter = document.getElementById('searchInput').value.toLowerCase().trim();
-
+            const filter = $('searchInput').value.toLowerCase().trim();
             const frag = document.createDocumentFragment();
             groups.forEach(g => {
                 const groupContacts = contacts.filter(c => (c.groupIds || []).includes(g.id) && !!c.private === isPrivateMode);
-                const matchedContacts = filter ? groupContacts.filter(c => `${c.first} ${c.last}`.toLowerCase().includes(filter)) : groupContacts;
-
+                const matched = filter ? groupContacts.filter(c => fullName(c).toLowerCase().includes(filter)) : groupContacts;
                 const card = document.createElement('div');
                 card.className = 'panel-bg rounded-2xl border border-zinc-800 p-4 space-y-3';
                 card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0">
                             <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-                                <span>${escapeHtml(g.name)}</span>
-                                <span class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-400">${groupContacts.length} contacts</span>
+                                <span class="truncate">${escapeHtml(g.name)}</span>
+                                <span class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-400 whitespace-nowrap">${groupContacts.length} contacts</span>
                             </h3>
                             <p class="text-[11px] text-zinc-400">${escapeHtml(g.notes || 'No description')}</p>
                         </div>
-                        <div class="flex items-center space-x-3 text-xs">
-                            <label class="flex items-center space-x-1 cursor-pointer" title="Toggle 3rd party sync sharing">
+                        <div class="flex items-center space-x-3 text-xs flex-shrink-0">
+                            <label class="flex items-center space-x-1 cursor-pointer" title="Include in cloud backups">
                                 <span class="text-[10px] text-zinc-400">Sync:</span>
-                                <input type="checkbox" ${g.allowSync ? 'checked' : ''} onchange="toggleGroupSync('${g.id}', this.checked)" class="w-4 h-4 rounded cursor-pointer">
+                                <input type="checkbox" ${g.allowSync ? 'checked' : ''} data-change="groupSync" data-id="${escapeHtml(g.id)}" class="w-4 h-4 rounded cursor-pointer">
                             </label>
-                            <button onclick="openEditGroup('${g.id}')" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteGroup('${g.id}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
+                            <button data-action="editGroup" data-id="${escapeHtml(g.id)}" aria-label="Edit group" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-pen"></i></button>
+                            <button data-action="delGroup" data-id="${escapeHtml(g.id)}" aria-label="Delete group" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <!-- Dropdown contacts list under group -->
                     <div class="space-y-1.5 pt-2 border-t border-zinc-800/80">
-                        ${matchedContacts.length ? matchedContacts.map(c => `
-                            <div class="p-2 rounded-xl bg-black/30 border border-zinc-800 flex items-center justify-between text-xs">
-                                <span class="font-medium text-white">${escapeHtml(c.first + ' ' + (c.last || ''))}</span>
-                                <span class="text-[11px] text-zinc-400">${escapeHtml(c.phones?.[0]?.number || '')}</span>
-                            </div>
-                        `).join('') : '<p class="text-[11px] text-zinc-500 italic">No contacts in this group.</p>'}
-                    </div>
-                `;
+                        ${matched.length ? matched.map(c => `
+                            <div data-action="open" data-id="${escapeHtml(c.id)}" class="p-2 rounded-xl bg-black/30 border border-zinc-800 flex items-center justify-between text-xs cursor-pointer">
+                                <span class="font-medium text-white">${escapeHtml(fullName(c))}</span>
+                                <span class="text-[11px] text-zinc-400">${escapeHtml((c.phones && c.phones[0] && c.phones[0].number) || '')}</span>
+                            </div>`).join('') : '<p class="text-[11px] text-zinc-500 italic">No contacts in this group.</p>'}
+                    </div>`;
                 frag.appendChild(card);
             });
+            if (!groups.length) container.innerHTML = '<div class="text-center py-12 text-zinc-500 text-xs">No groups yet.</div>';
             container.appendChild(frag);
         }
 
-        function toggleGroupSync(id, val) {
-            const g = groups.find(x => x.id === id);
-            if (g) {
-                g.allowSync = val;
-                persistData();
-                showToast(`Group "${g.name}" sync sharing ${val ? 'enabled' : 'disabled'}`);
-            }
-        }
-
         function deleteGroup(id) {
+            const g = groups.find(x => x.id === id);
+            if (!g) return;
+            const n = contacts.filter(c => (c.groupIds || []).includes(id)).length;
+            if (!confirm(`Delete group "${g.name}"?${n ? `\n${n} contact(s) will be removed from it (the contacts themselves are kept).` : ''}`)) return;
             groups = groups.filter(x => x.id !== id);
+            contacts.forEach(c => { c.groupIds = (c.groupIds || []).filter(gid => gid !== id); });
+            recycleBin.forEach(c => { c.groupIds = (c.groupIds || []).filter(gid => gid !== id); });
             persistData();
             renderGroupsView();
             showToast('Group deleted');
         }
 
-        /* ---------- Recycle Bin Tab ---------- */
+        /* ---------- Recycle bin tab ---------- */
         function renderBinView() {
-            const container = document.getElementById('binList');
+            const container = $('binList');
             container.innerHTML = '';
-
-            // Auto clean past 30 days
-            const now = new Date();
-            recycleBin = recycleBin.filter(item => {
-                const diffTime = Math.abs(now - new Date(item.deletedAt));
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 30;
-            });
-            persistData();
-
-            if (!recycleBin.length) {
-                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">Recycle bin is empty.</div>`;
+            const items = recycleBin.filter(c => !!c.private === isPrivateMode);
+            if (!items.length) {
+                container.innerHTML = '<div class="text-center py-12 text-zinc-500 text-xs">Recycle bin is empty.</div>';
                 return;
             }
-
             const frag = document.createDocumentFragment();
-            recycleBin.forEach((c, idx) => {
+            items.forEach(c => {
                 const card = document.createElement('div');
                 card.className = 'panel-bg p-3 rounded-xl border border-zinc-800 flex items-center justify-between text-xs';
                 card.innerHTML = `
-                    <div>
-                        <span class="font-bold text-white">${escapeHtml(c.first + ' ' + (c.last || ''))}</span>
-                        <p class="text-[10px] text-zinc-500">Deleted: ${new Date(c.deletedAt).toLocaleDateString()}</p>
+                    <div class="min-w-0">
+                        <span class="font-bold text-white">${escapeHtml(fullName(c))}</span>
+                        <p class="text-[10px] text-zinc-500">Deleted: ${escapeHtml(new Date(c.deletedAt).toLocaleDateString())}</p>
                     </div>
-                    <div class="space-x-2">
-                        <button onclick="restoreBinItem(${idx})" class="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold">Restore</button>
-                        <button onclick="permanentlyDelete(${idx})" class="px-3 py-1 rounded bg-red-950 text-red-400 font-semibold">Delete</button>
-                    </div>
-                `;
+                    <div class="space-x-2 flex-shrink-0">
+                        <button data-action="restore" data-id="${escapeHtml(c.id)}" class="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold">Restore</button>
+                        <button data-action="purge" data-id="${escapeHtml(c.id)}" class="px-3 py-1 rounded bg-red-950 text-red-400 font-semibold">Delete</button>
+                    </div>`;
                 frag.appendChild(card);
             });
             container.appendChild(frag);
         }
 
-        function restoreBinItem(idx) {
-            const item = recycleBin.splice(idx, 1)[0];
-            delete item.deletedAt;
-            contacts.push(item);
-            persistData();
-            renderCurrentTab();
-            showToast('Contact restored');
-        }
+        /* ---------- Contact modal & dynamic fields ---------- */
+        const contactModal = $('contactModal');
+        const phoneFieldsContainer = $('phoneFieldsContainer');
+        const emailFieldsContainer = $('emailFieldsContainer');
 
-        function permanentlyDelete(idx) {
-            recycleBin.splice(idx, 1);
-            persistData();
-            renderCurrentTab();
-            showToast('Permanently deleted');
-        }
-
-        document.getElementById('btnClearBin').addEventListener('click', () => {
-            recycleBin = [];
-            persistData();
-            renderCurrentTab();
-            showToast('Recycle bin emptied');
-        });
-
-        /* ---------- Contact Modal & Dynamic Fields ---------- */
-        const contactModal = document.getElementById('contactModal');
-        const phoneFieldsContainer = document.getElementById('phoneFieldsContainer');
-        const emailFieldsContainer = document.getElementById('emailFieldsContainer');
-
-        document.getElementById('openAddContactBtn').addEventListener('click', () => {
-            document.getElementById('contactModalTitle').innerText = 'Add Contact';
-            document.getElementById('editingContactId').value = '';
-            document.getElementById('cFirst').value = '';
-            document.getElementById('cMiddle').value = '';
-            document.getElementById('cLast').value = '';
-            document.getElementById('cNick').value = '';
-            document.getElementById('cBday').value = '';
-            document.getElementById('cNotes').value = '';
+        function openAddContact() {
+            $('contactModalTitle').innerText = 'Add Contact';
+            $('editingContactId').value = '';
+            ['cFirst', 'cMiddle', 'cLast', 'cNick', 'cBday', 'cNotes'].forEach(id => { $(id).value = ''; });
             phoneFieldsContainer.innerHTML = '';
             emailFieldsContainer.innerHTML = '';
             addPhoneField('', 'Personal', true);
             addEmailField('', 'Personal', true);
             renderContactGroupCheckboxes([]);
             contactModal.classList.remove('hidden');
-        });
+            $('cFirst').focus();
+        }
+
+        function tagOptions(list, tag) {
+            return list.map(t => `<option value="${t}" ${tag === t ? 'selected' : ''}>${t}</option>`).join('');
+        }
 
         function addPhoneField(number = '', tag = 'Personal', isDefault = false) {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
-                <input type="text" placeholder="Phone number" value="${escapeHtml(number)}" class="phone-num-input flex-1 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
-                <select class="phone-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">
-                    <option value="Personal" ${tag==='Personal'?'selected':''}>Personal</option>
-                    <option value="Work" ${tag==='Work'?'selected':''}>Work</option>
-                    <option value="Mobile" ${tag==='Mobile'?'selected':''}>Mobile</option>
-                    <option value="Other" ${tag==='Other'?'selected':''}>Other</option>
-                </select>
-                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultPhone" ${isDefault?'checked':''}> Default</label>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 text-xs px-1"><i class="fa-solid xmark fa-x"></i></button>
-            `;
+                <input type="tel" placeholder="Phone number" value="${escapeHtml(number)}" class="phone-num-input flex-1 min-w-0 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <select class="phone-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">${tagOptions(['Personal', 'Work', 'Mobile', 'Other'], tag)}</select>
+                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultPhone" ${isDefault ? 'checked' : ''}> Default</label>
+                <button type="button" data-action="removeRow" class="text-red-400 text-xs px-1" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button>`;
             phoneFieldsContainer.appendChild(div);
         }
 
@@ -797,29 +1007,21 @@
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
-                <input type="email" placeholder="Email address" value="${escapeHtml(address)}" class="email-addr-input flex-1 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
-                <select class="email-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">
-                    <option value="Personal" ${tag==='Personal'?'selected':''}>Personal</option>
-                    <option value="Work" ${tag==='Work'?'selected':''}>Work</option>
-                    <option value="Other" ${tag==='Other'?'selected':''}>Other</option>
-                </select>
-                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultEmail" ${isDefault?'checked':''}> Default</label>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 text-xs px-1"><i class="fa-solid fa-x"></i></button>
-            `;
+                <input type="email" placeholder="Email address" value="${escapeHtml(address)}" class="email-addr-input flex-1 min-w-0 px-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white">
+                <select class="email-tag-input px-2 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-300">${tagOptions(['Personal', 'Work', 'Other'], tag)}</select>
+                <label class="flex items-center text-[10px] text-zinc-400 gap-1"><input type="radio" name="defaultEmail" ${isDefault ? 'checked' : ''}> Default</label>
+                <button type="button" data-action="removeRow" class="text-red-400 text-xs px-1" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button>`;
             emailFieldsContainer.appendChild(div);
         }
 
-        document.getElementById('btnAddPhoneField').addEventListener('click', () => addPhoneField());
-        document.getElementById('btnAddEmailField').addEventListener('click', () => addEmailField());
-
-        function renderContactGroupCheckboxes(selectedIds = []) {
-            const container = document.getElementById('contactGroupsCheckboxes');
+        function renderContactGroupCheckboxes(selectedIds) {
+            const container = $('contactGroupsCheckboxes');
             container.innerHTML = '';
+            if (!groups.length) container.innerHTML = '<span class="text-[11px] text-zinc-500">No groups yet.</span>';
             groups.forEach(g => {
-                const checked = selectedIds.includes(g.id);
                 const lbl = document.createElement('label');
                 lbl.className = 'flex items-center space-x-1.5 bg-black/40 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300 cursor-pointer';
-                lbl.innerHTML = `<input type="checkbox" value="${g.id}" ${checked?'checked':''} class="contact-group-chk w-3.5 h-3.5 rounded"> <span>${escapeHtml(g.name)}</span>`;
+                lbl.innerHTML = `<input type="checkbox" value="${escapeHtml(g.id)}" ${selectedIds.includes(g.id) ? 'checked' : ''} class="contact-group-chk w-3.5 h-3.5 rounded"> <span>${escapeHtml(g.name)}</span>`;
                 container.appendChild(lbl);
             });
         }
@@ -827,236 +1029,481 @@
         function openEditContact(id) {
             const c = contacts.find(x => x.id === id);
             if (!c) return;
-            document.getElementById('contactModalTitle').innerText = 'Edit Contact';
-            document.getElementById('editingContactId').value = c.id;
-            document.getElementById('cFirst').value = c.first || '';
-            document.getElementById('cMiddle').value = c.middle || '';
-            document.getElementById('cLast').value = c.last || '';
-            document.getElementById('cNick').value = c.nick || '';
-            document.getElementById('cBday').value = c.bday || '';
-            document.getElementById('cNotes').value = c.notes || '';
-
+            $('detailModal').classList.add('hidden');
+            $('contactModalTitle').innerText = 'Edit Contact';
+            $('editingContactId').value = c.id;
+            $('cFirst').value = c.first || '';
+            $('cMiddle').value = c.middle || '';
+            $('cLast').value = c.last || '';
+            $('cNick').value = c.nick || '';
+            $('cBday').value = c.bday || '';
+            $('cNotes').value = c.notes || '';
             phoneFieldsContainer.innerHTML = '';
-            (c.phones || []).forEach((p, i) => addPhoneField(p.number, p.tag, p.isDefault || i === 0));
-            if (!c.phones?.length) addPhoneField('', 'Personal', true);
-
+            const phones = c.phones || [];
+            const pDef = phones.some(p => p.isDefault);
+            phones.forEach((p, i) => addPhoneField(p.number, p.tag, pDef ? !!p.isDefault : i === 0));
+            if (!phones.length) addPhoneField('', 'Personal', true);
             emailFieldsContainer.innerHTML = '';
-            (c.emails || []).forEach((e, i) => addEmailField(e.address, e.tag, e.isDefault || i === 0));
-            if (!c.emails?.length) addEmailField('', 'Personal', true);
-
+            const emails = c.emails || [];
+            const eDef = emails.some(e => e.isDefault);
+            emails.forEach((e, i) => addEmailField(e.address, e.tag, eDef ? !!e.isDefault : i === 0));
+            if (!emails.length) addEmailField('', 'Personal', true);
             renderContactGroupCheckboxes(c.groupIds || []);
             contactModal.classList.remove('hidden');
         }
 
-        document.getElementById('btnSaveContact').addEventListener('click', () => {
-            const first = document.getElementById('cFirst').value.trim();
-            if (!first) return alert('First name is required.');
+        function saveContactFromForm() {
+            const first = $('cFirst').value.trim();
+            if (!first) { showToast('First name is required'); $('cFirst').focus(); return; }
 
             const phones = Array.from(phoneFieldsContainer.children).map(row => ({
                 number: row.querySelector('.phone-num-input').value.trim(),
                 tag: row.querySelector('.phone-tag-input').value,
                 isDefault: row.querySelector('input[type="radio"]').checked
             })).filter(p => p.number);
-
             const emails = Array.from(emailFieldsContainer.children).map(row => ({
                 address: row.querySelector('.email-addr-input').value.trim(),
                 tag: row.querySelector('.email-tag-input').value,
                 isDefault: row.querySelector('input[type="radio"]').checked
             })).filter(e => e.address);
+            if (phones.length && !phones.some(p => p.isDefault)) phones[0].isDefault = true;
+            if (emails.length && !emails.some(e => e.isDefault)) emails[0].isDefault = true;
 
             const groupIds = Array.from(document.querySelectorAll('.contact-group-chk:checked')).map(chk => chk.value);
-            const editId = document.getElementById('editingContactId').value;
+            const editId = $('editingContactId').value;
+            const existing = editId ? contacts.find(x => x.id === editId) : null;
 
-            const contactData = {
-                id: editId || 'c_' + Date.now().toString(36),
+            const data = Object.assign({}, existing || {}, {
+                id: existing ? existing.id : uid('c'),
                 first,
-                middle: document.getElementById('cMiddle').value.trim(),
-                last: document.getElementById('cLast').value.trim(),
-                nick: document.getElementById('cNick').value.trim(),
-                bday: document.getElementById('cBday').value,
-                notes: document.getElementById('cNotes').value.trim(),
-                phones,
-                emails,
-                groupIds,
-                private: isPrivateMode,
-                favorite: false
-            };
+                middle: $('cMiddle').value.trim(),
+                last: $('cLast').value.trim(),
+                nick: $('cNick').value.trim(),
+                bday: $('cBday').value,
+                notes: $('cNotes').value.trim(),
+                phones, emails, groupIds,
+                private: existing ? !!existing.private : isPrivateMode,
+                favorite: existing ? !!existing.favorite : false
+            });
 
-            if (editId) {
-                const idx = contacts.findIndex(x => x.id === editId);
-                if (idx !== -1) {
-                    contactData.favorite = contacts[idx].favorite;
-                    contacts[idx] = contactData;
-                }
-            } else {
-                contacts.push(contactData);
-            }
-
+            if (existing) contacts[contacts.indexOf(existing)] = data; else contacts.push(data);
             persistData();
             contactModal.classList.add('hidden');
             renderCurrentTab();
-            showToast('Contact saved successfully');
-        });
+            showToast('Contact saved');
+        }
 
-        /* ---------- Group Modal ---------- */
-        const groupModal = document.getElementById('groupModal');
-        document.getElementById('openAddGroupBtn').addEventListener('click', () => {
-            document.getElementById('groupModalTitle').innerText = 'Create Group';
-            document.getElementById('editingGroupId').value = '';
-            document.getElementById('gName').value = '';
-            document.getElementById('gNotes').value = '';
-            document.getElementById('gSyncToggle').checked = true;
+        /* ---------- Group modal ---------- */
+        const groupModal = $('groupModal');
+        function openAddGroup() {
+            $('groupModalTitle').innerText = 'Create Group';
+            $('editingGroupId').value = '';
+            $('gName').value = ''; $('gNotes').value = '';
+            $('gSyncToggle').checked = true;
             groupModal.classList.remove('hidden');
-        });
-
+            $('gName').focus();
+        }
         function openEditGroup(id) {
             const g = groups.find(x => x.id === id);
             if (!g) return;
-            document.getElementById('groupModalTitle').innerText = 'Edit Group';
-            document.getElementById('editingGroupId').value = g.id;
-            document.getElementById('gName').value = g.name || '';
-            document.getElementById('gNotes').value = g.notes || '';
-            document.getElementById('gSyncToggle').checked = !!g.allowSync;
+            $('groupModalTitle').innerText = 'Edit Group';
+            $('editingGroupId').value = g.id;
+            $('gName').value = g.name || '';
+            $('gNotes').value = g.notes || '';
+            $('gSyncToggle').checked = !!g.allowSync;
             groupModal.classList.remove('hidden');
         }
-
-        document.getElementById('btnSaveGroup').addEventListener('click', () => {
-            const name = document.getElementById('gName').value.trim();
-            if (!name) return alert('Group name required.');
-            const editId = document.getElementById('editingGroupId').value;
-
-            const groupData = {
-                id: editId || 'g_' + Date.now().toString(36),
-                name,
-                notes: document.getElementById('gNotes').value.trim(),
-                allowSync: document.getElementById('gSyncToggle').checked
-            };
-
-            if (editId) {
-                const idx = groups.findIndex(x => x.id === editId);
-                if (idx !== -1) groups[idx] = groupData;
-            } else {
-                groups.push(groupData);
-            }
-
+        function saveGroup() {
+            const name = $('gName').value.trim();
+            if (!name) { showToast('Group name required'); return; }
+            const editId = $('editingGroupId').value;
+            const data = { id: editId || uid('g'), name, notes: $('gNotes').value.trim(), allowSync: $('gSyncToggle').checked };
+            if (editId) { const i = groups.findIndex(x => x.id === editId); if (i !== -1) groups[i] = data; }
+            else groups.push(data);
             persistData();
             groupModal.classList.add('hidden');
-            renderGroupsView();
-            showToast('Group saved');
-        });
-
-        /* ---------- Duplicate Finder ---------- */
-        document.getElementById('btnDuplicateFinder').addEventListener('click', () => {
-            const map = new Map();
-            const duplicates = [];
-
-            contacts.forEach(c => {
-                const nameKey = `${c.first || ''} ${c.last || ''}`.trim().toLowerCase();
-                const phoneKey = c.phones?.[0]?.number || '';
-                const emailKey = c.emails?.[0]?.address || '';
-
-                const key = `${nameKey}_${phoneKey}_${emailKey}`;
-                if (nameKey && (map.has(nameKey) || (phoneKey && map.has(phoneKey)))) {
-                    duplicates.push(c);
-                } else {
-                    if (nameKey) map.set(nameKey, c);
-                    if (phoneKey) map.set(phoneKey, c);
-                }
-            });
-
-            const container = document.getElementById('duplicateListContainer');
-            container.innerHTML = '';
-
-            if (!duplicates.length) {
-                container.innerHTML = `<p class="text-xs text-zinc-400 text-center py-6">No duplicate contacts detected.</p>`;
-            } else {
-                duplicates.forEach(dup => {
-                    const div = document.createElement('div');
-                    div.className = 'p-3 rounded-xl bg-black/40 border border-zinc-800 flex items-center justify-between text-xs';
-                    div.innerHTML = `
-                        <div>
-                            <span class="font-bold text-white">${escapeHtml(dup.first + ' ' + (dup.last || ''))}</span>
-                            <p class="text-[10px] text-zinc-400">${escapeHtml(dup.phones?.[0]?.number || 'No phone')}</p>
-                        </div>
-                        <button onclick="mergeDuplicate('${dup.id}')" class="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold">Merge / Remove</button>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-            document.getElementById('duplicateModal').classList.remove('hidden');
-        });
-
-        function mergeDuplicate(id) {
-            contacts = contacts.filter(x => x.id !== id);
-            persistData();
-            document.getElementById('duplicateModal').classList.add('hidden');
             renderCurrentTab();
-            showToast('Duplicate merged/removed successfully');
+            showToast('Group saved');
         }
 
-        /* ---------- Export & Safe Import ---------- */
-        document.getElementById('btnExportJson').addEventListener('click', () => {
-            const data = { contacts, groups };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        /* ---------- Duplicate finder + real merge ---------- */
+        function computeClusters() {
+            const pool = contacts.filter(c => !!c.private === isPrivateMode);
+            const parent = pool.map((_, i) => i);
+            const find = i => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+            const union = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+            const keysOf = c => {
+                const k = [];
+                const n = nameKey(c); if (n) k.push('n:' + n);
+                (c.phones || []).forEach(p => { const d = digits(p.number); if (d.length >= 6) k.push('p:' + d); });
+                (c.emails || []).forEach(e => { const a = String(e.address).trim().toLowerCase(); if (a) k.push('e:' + a); });
+                return k;
+            };
+            const seen = new Map();
+            pool.forEach((c, i) => keysOf(c).forEach(k => { if (seen.has(k)) union(seen.get(k), i); else seen.set(k, i); }));
+            const buckets = new Map();
+            pool.forEach((c, i) => { const r = find(i); if (!buckets.has(r)) buckets.set(r, []); buckets.get(r).push(c); });
+            const out = [];
+            buckets.forEach(members => {
+                if (members.length < 2) return;
+                const counts = new Map();
+                members.forEach(c => new Set(keysOf(c)).forEach(k => counts.set(k, (counts.get(k) || 0) + 1)));
+                const reasons = new Set();
+                counts.forEach((n, k) => { if (n >= 2) reasons.add({ n: 'name', p: 'phone', e: 'email' }[k[0]]); });
+                out.push({ members, reasons: Array.from(reasons) });
+            });
+            return out;
+        }
+
+        function renderDuplicates() {
+            dupClusters = computeClusters();
+            const container = $('duplicateListContainer');
+            container.innerHTML = '';
+            if (!dupClusters.length) {
+                container.innerHTML = '<p class="text-xs text-zinc-400 text-center py-6">No duplicate contacts detected.</p>';
+                return;
+            }
+            dupClusters.forEach((cl, i) => {
+                const div = document.createElement('div');
+                div.className = 'p-3 rounded-xl bg-black/40 border border-zinc-800 space-y-2 text-xs';
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-amber-400 uppercase tracking-wider">Same ${escapeHtml(cl.reasons.join(' / '))}</span>
+                        <button data-action="mergeCluster" data-id="${i}" class="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold">Merge ${cl.members.length}</button>
+                    </div>
+                    ${cl.members.map(c => `<div><span class="font-bold text-white">${escapeHtml(fullName(c))}</span>
+                        <span class="text-[10px] text-zinc-400"> ${escapeHtml((c.phones && c.phones[0] && c.phones[0].number) || '')} ${escapeHtml((c.emails && c.emails[0] && c.emails[0].address) || '')}</span></div>`).join('')}`;
+                container.appendChild(div);
+            });
+        }
+
+        function mergeCluster(idx) {
+            const cl = dupClusters[idx];
+            if (!cl) return;
+            const score = c => (c.phones || []).length + (c.emails || []).length + (c.notes ? 1 : 0) + (c.bday ? 1 : 0) + (c.nick ? 1 : 0) + (c.favorite ? 1 : 0);
+            const members = cl.members.slice().sort((a, b) => score(b) - score(a));
+            const primary = members[0];
+            const merged = Object.assign({}, primary);
+            merged.phones = (primary.phones || []).map(p => Object.assign({}, p));
+            merged.emails = (primary.emails || []).map(e => Object.assign({}, e));
+            merged.groupIds = (primary.groupIds || []).slice();
+            const notes = new Set(primary.notes ? [primary.notes] : []);
+            members.slice(1).forEach(o => {
+                ['first', 'middle', 'last', 'nick', 'bday'].forEach(f => { if (!merged[f] && o[f]) merged[f] = o[f]; });
+                if (o.notes) notes.add(o.notes);
+                (o.phones || []).forEach(p => { if (!merged.phones.some(x => digits(x.number) === digits(p.number))) merged.phones.push(Object.assign({}, p, { isDefault: false })); });
+                (o.emails || []).forEach(e => { if (!merged.emails.some(x => x.address.toLowerCase() === e.address.toLowerCase())) merged.emails.push(Object.assign({}, e, { isDefault: false })); });
+                (o.groupIds || []).forEach(g => { if (!merged.groupIds.includes(g)) merged.groupIds.push(g); });
+                if (o.favorite) merged.favorite = true;
+            });
+            merged.notes = Array.from(notes).join('\n');
+            if (merged.phones.length && !merged.phones.some(p => p.isDefault)) merged.phones[0].isDefault = true;
+            if (merged.emails.length && !merged.emails.some(e => e.isDefault)) merged.emails[0].isDefault = true;
+            contacts[contacts.findIndex(c => c.id === primary.id)] = merged;
+            deleteContacts(members.slice(1).map(c => c.id), true);
+            persistData();
+            renderDuplicates();
+            renderCurrentTab();
+            showToast('Merged. Extras are in the Recycle Bin.');
+        }
+
+        /* ---------- vCard export / import ---------- */
+        function vEsc(v) { return String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;'); }
+        function vUnesc(v) { return String(v).replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1'); }
+
+        function toVcard(list) {
+            return list.map(c => {
+                const L = ['BEGIN:VCARD', 'VERSION:3.0',
+                    `N:${vEsc(c.last)};${vEsc(c.first)};${vEsc(c.middle)};;`,
+                    `FN:${vEsc(fullName(c))}`];
+                if (c.nick) L.push('NICKNAME:' + vEsc(c.nick));
+                if (c.bday) L.push('BDAY:' + c.bday);
+                (c.phones || []).forEach(p => L.push(`TEL;TYPE=${({ Work: 'WORK', Mobile: 'CELL', Personal: 'HOME' })[p.tag] || 'VOICE'}:${vEsc(p.number)}`));
+                (c.emails || []).forEach(e => L.push(`EMAIL;TYPE=${({ Work: 'WORK', Personal: 'HOME' })[e.tag] || 'INTERNET'}:${vEsc(e.address)}`));
+                if (c.notes) L.push('NOTE:' + vEsc(c.notes));
+                const gn = (c.groupIds || []).map(id => groups.find(g => g.id === id)).filter(Boolean).map(g => vEsc(g.name));
+                if (gn.length) L.push('CATEGORIES:' + gn.join(','));
+                L.push('END:VCARD');
+                return L.join('\r\n');
+            }).join('\r\n') + '\r\n';
+        }
+
+        function parseVcard(text) {
+            const unfolded = text.replace(/\r?\n[ \t]/g, '');
+            const cards = unfolded.split(/BEGIN:VCARD/i).slice(1);
+            const out = [];
+            cards.forEach(block => {
+                const c = { phones: [], emails: [], groupNames: [] };
+                let fn = '';
+                block.split(/\r?\n/).forEach(line => {
+                    const i = line.indexOf(':');
+                    if (i < 1) return;
+                    const keyParts = line.slice(0, i).split(';');
+                    const key = keyParts[0].split('.').pop().toUpperCase();
+                    const types = keyParts.slice(1).join(';').toUpperCase();
+                    const val = line.slice(i + 1).trim();
+                    if (key === 'N') {
+                        const p = val.split(';').map(vUnesc);
+                        c.last = p[0] || ''; c.first = p[1] || ''; c.middle = p[2] || '';
+                    } else if (key === 'FN') fn = vUnesc(val);
+                    else if (key === 'NICKNAME') c.nick = vUnesc(val);
+                    else if (key === 'BDAY') { const m = val.replace(/-/g, '').match(/^(\d{4})(\d{2})(\d{2})/); if (m) c.bday = `${m[1]}-${m[2]}-${m[3]}`; }
+                    else if (key === 'TEL') c.phones.push({ number: vUnesc(val), tag: types.includes('WORK') ? 'Work' : types.includes('CELL') ? 'Mobile' : types.includes('HOME') ? 'Personal' : 'Other', isDefault: false });
+                    else if (key === 'EMAIL') c.emails.push({ address: vUnesc(val), tag: types.includes('WORK') ? 'Work' : types.includes('HOME') ? 'Personal' : 'Other', isDefault: false });
+                    else if (key === 'NOTE') c.notes = vUnesc(val);
+                    else if (key === 'CATEGORIES') c.groupNames = val.split(/(?<!\\),/).map(s => vUnesc(s).trim()).filter(Boolean);
+                });
+                if (!c.first && !c.last && fn) { const p = fn.split(/\s+/); c.first = p.shift() || ''; c.last = p.join(' '); }
+                if (!c.first && c.last) { c.first = c.last; c.last = ''; }
+                if (c.first) out.push(c);
+            });
+            return out;
+        }
+
+        function downloadFile(name, text, mime) {
+            const blob = new Blob([text], { type: mime });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = 'grizzly_contacts_backup.json';
-            a.click();
-            a.remove();
-        });
-
-        document.getElementById('importJsonInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const parsed = JSON.parse(ev.target.result);
-                    if (parsed.contacts && Array.isArray(parsed.contacts)) {
-                        // Safe merge check
-                        let added = 0;
-                        parsed.contacts.forEach(imp => {
-                            const exists = contacts.some(c => c.first === imp.first && c.last === imp.last);
-                            if (!exists) {
-                                contacts.push(imp);
-                                added++;
-                            }
-                        });
-                        persistData();
-                        renderCurrentTab();
-                        alert(`Imported ${added} new contacts safely without overwriting matches.`);
-                    }
-                } catch (err) {
-                    alert('Invalid JSON file format.');
-                }
-                e.target.value = '';
-            };
-            reader.readAsText(file);
-        });
-
-        /* ---------- Modal Close Buttons ---------- */
-        document.querySelectorAll('.closeModalBtn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('settingsModal').classList.add('hidden');
-                contactModal.classList.add('hidden');
-                groupModal.classList.add('hidden');
-                document.getElementById('pinModal').classList.add('hidden');
-                document.getElementById('duplicateModal').classList.add('hidden');
-            });
-        });
-
-        document.getElementById('openSettingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.remove('hidden');
-        });
-
-        /* ---------- Service Worker Registration ---------- */
-        if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
+        /* ---------- Import normalisation (shared by JSON + vCard) ---------- */
+        function normalizeContact(raw) {
+            const s = v => (v == null ? '' : String(v).trim());
+            const c = {
+                id: cleanId(raw.id),
+                first: s(raw.first), middle: s(raw.middle), last: s(raw.last), nick: s(raw.nick),
+                bday: /^\d{4}-\d{2}-\d{2}$/.test(s(raw.bday)) ? s(raw.bday) : '',
+                notes: s(raw.notes),
+                phones: (Array.isArray(raw.phones) ? raw.phones : []).map(p => ({ number: s(p && p.number), tag: s(p && p.tag) || 'Personal', isDefault: !!(p && p.isDefault) })).filter(p => p.number),
+                emails: (Array.isArray(raw.emails) ? raw.emails : []).map(e => ({ address: s(e && e.address), tag: s(e && e.tag) || 'Personal', isDefault: !!(e && e.isDefault) })).filter(e => e.address),
+                groupIds: (Array.isArray(raw.groupIds) ? raw.groupIds : []).map(cleanId).filter(Boolean),
+                private: !!raw.private,
+                favorite: !!raw.favorite
+            };
+            if (c.phones.length && !c.phones.some(p => p.isDefault)) c.phones[0].isDefault = true;
+            if (c.emails.length && !c.emails.some(e => e.isDefault)) c.emails[0].isDefault = true;
+            return c.first || c.last ? c : null;
+        }
+
+        function isDuplicateOf(c, existing) {
+            const n = nameKey(c);
+            return existing.some(e => {
+                if (nameKey(e) !== n) return false;
+                if (!(c.phones.length && (e.phones || []).length)) return true;
+                const set = new Set(c.phones.map(p => digits(p.number)));
+                return (e.phones || []).some(p => set.has(digits(p.number)));
+            });
+        }
+
+        function mergeImported(list, groupMap) {
+            let added = 0, skipped = 0;
+            const takenIds = new Set(contacts.concat(recycleBin).map(c => c.id));
+            list.forEach(raw => {
+                const c = normalizeContact(raw);
+                if (!c) { skipped++; return; }
+                if (isDuplicateOf(c, contacts.concat(recycleBin)) ) { skipped++; return; }
+                if (!c.id || takenIds.has(c.id)) c.id = uid('c');
+                takenIds.add(c.id);
+                if (groupMap) c.groupIds = c.groupIds.map(g => groupMap[g] || null).filter(Boolean);
+                contacts.push(c);
+                added++;
+            });
+            return { added, skipped };
+        }
+
+        function importJsonText(text) {
+            let parsed;
+            try { parsed = JSON.parse(text); } catch (e) { return alert('Invalid JSON file.'); }
+            const list = Array.isArray(parsed) ? parsed : parsed && parsed.contacts;
+            if (!Array.isArray(list)) return alert('No contacts found in this file.');
+            const groupMap = {};
+            (Array.isArray(parsed.groups) ? parsed.groups : []).forEach(g => {
+                if (!g || !g.name) return;
+                const gid = cleanId(g.id);
+                const sameId = gid && groups.find(x => x.id === gid && x.name.toLowerCase() === String(g.name).toLowerCase());
+                const sameName = groups.find(x => x.name.toLowerCase() === String(g.name).toLowerCase());
+                if (sameId) groupMap[gid] = sameId.id;
+                else if (sameName) { if (gid) groupMap[gid] = sameName.id; }
+                else {
+                    const ng = { id: (gid && !groups.some(x => x.id === gid)) ? gid : uid('g'), name: String(g.name).trim(), notes: String(g.notes || ''), allowSync: g.allowSync !== false };
+                    groups.push(ng);
+                    if (gid) groupMap[gid] = ng.id;
+                }
+            });
+            const r = mergeImported(list, groupMap);
+            persistData(); renderCurrentTab();
+            alert(`Imported ${r.added} new contact(s). Skipped ${r.skipped} duplicate/invalid. Nothing was overwritten.`);
+        }
+
+        function importVcfText(text) {
+            const parsed = parseVcard(text);
+            if (!parsed.length) return alert('No contacts found in this vCard file.');
+            const nameToGroup = {};
+            const prepared = parsed.map(p => {
+                p.groupIds = [];
+                p.groupNames.forEach(nm => {
+                    let g = groups.find(x => x.name.toLowerCase() === nm.toLowerCase());
+                    if (!g) { g = { id: uid('g'), name: nm, notes: 'Imported from vCard', allowSync: true }; groups.push(g); }
+                    nameToGroup[g.id] = g.id;
+                    p.groupIds.push(g.id);
+                });
+                p.private = isPrivateMode;
+                return p;
+            });
+            const r = mergeImported(prepared, nameToGroup);
+            persistData(); renderCurrentTab();
+            alert(`Imported ${r.added} new contact(s). Skipped ${r.skipped} duplicate/invalid.`);
+        }
+
+        /* ---------- Modals: close, Esc, backdrop ---------- */
+        function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            const open = Array.from(document.querySelectorAll('.modal')).filter(m => !m.classList.contains('hidden'));
+            if (open.length) open[open.length - 1].classList.add('hidden');
+            else if (selectMode) setSelectMode(false);
+        });
+        document.querySelectorAll('.modal').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) m.classList.add('hidden'); }));
+        document.querySelectorAll('.closeModalBtn').forEach(btn => btn.addEventListener('click', () => btn.closest('.modal').classList.add('hidden')));
+
+        /* ---------- Event delegation ---------- */
+        document.addEventListener('click', e => {
+            const el = e.target.closest('[data-action]');
+            if (!el) return;
+            const id = el.dataset.id;
+            switch (el.dataset.action) {
+                case 'open': if (selectMode) { toggleSel(id); } else openDetail(id); break;
+                case 'toggleSel': toggleSel(id); e.stopPropagation(); break;
+                case 'fav': toggleFavorite(id); break;
+                case 'edit': openEditContact(id); break;
+                case 'del': deleteContacts([id]); break;
+                case 'copy': copyText(el.dataset.text); break;
+                case 'vcf1': { const c = contacts.find(x => x.id === id); if (c) downloadFile(((fullName(c) || 'contact').replace(/[^\w-]+/g, '_')) + '.vcf', toVcard([c]), 'text/vcard'); break; }
+                case 'removeRow': el.parentElement.remove(); break;
+                case 'editGroup': openEditGroup(id); break;
+                case 'delGroup': deleteGroup(id); break;
+                case 'restore': restoreContacts([id]); break;
+                case 'purge': recycleBin = recycleBin.filter(x => x.id !== id); persistData({ noSync: true }); renderCurrentTab(); showToast('Permanently deleted'); break;
+                case 'mergeCluster': mergeCluster(parseInt(id, 10)); break;
+            }
+        });
+        document.addEventListener('change', e => {
+            const el = e.target.closest('[data-change]');
+            if (el && el.dataset.change === 'groupSync') {
+                const g = groups.find(x => x.id === el.dataset.id);
+                if (g) { g.allowSync = el.checked; persistData(); showToast(`Group "${g.name}" sync ${g.allowSync ? 'enabled' : 'disabled'}`); }
+            }
+        });
+
+        function toggleSel(id) {
+            if (selected.has(id)) selected.delete(id); else selected.add(id);
+            renderCurrentTab();
+        }
+
+        /* ---------- Static button wiring ---------- */
+        function wireButtons() {
+            $('openAddContactBtn').addEventListener('click', openAddContact);
+            $('openSettingsBtn').addEventListener('click', () => { updatePinHint(); updateWebhookStatus(); $('settingsModal').classList.remove('hidden'); });
+            $('btnAddPhoneField').addEventListener('click', () => addPhoneField());
+            $('btnAddEmailField').addEventListener('click', () => addEmailField());
+            $('btnSaveContact').addEventListener('click', saveContactFromForm);
+            $('openAddGroupBtn').addEventListener('click', openAddGroup);
+            $('btnSaveGroup').addEventListener('click', saveGroup);
+
+            document.querySelectorAll('[data-theme-pick]').forEach(b => b.addEventListener('click', () => setAppTheme(b.dataset.themePick)));
+            document.querySelectorAll('[data-accent]').forEach(b => b.addEventListener('click', () => setAccentColor(b.dataset.accent)));
+
+            $('webhookUrlInput').addEventListener('input', e => { localStorage.setItem('grizzly_webhook', e.target.value.trim()); });
+            $('btnTestWebhook').addEventListener('click', () => runSync(true));
+
+            $('btnSelectMode').addEventListener('click', () => setSelectMode(!selectMode));
+            $('bulkAll').addEventListener('click', () => {
+                const vis = visibleContacts();
+                if (selected.size === vis.length) selected.clear(); else vis.forEach(c => selected.add(c.id));
+                renderCurrentTab();
+            });
+            $('bulkDelete').addEventListener('click', () => {
+                if (!selected.size) return showToast('Select contacts first');
+                const ids = Array.from(selected);
+                deleteContacts(ids);
+                setSelectMode(false);
+            });
+            $('bulkExport').addEventListener('click', () => {
+                if (!selected.size) return showToast('Select contacts first');
+                downloadFile('grizzly_selected.vcf', toVcard(contacts.filter(c => selected.has(c.id))), 'text/vcard');
+            });
+            $('bulkGroup').addEventListener('click', () => {
+                if (!selected.size) return showToast('Select contacts first');
+                if (!groups.length) return showToast('Create a group first');
+                $('bulkGroupSelect').innerHTML = groups.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.name)}</option>`).join('');
+                $('bulkGroupModal').classList.remove('hidden');
+            });
+            const bulkApply = add => {
+                const gid = $('bulkGroupSelect').value;
+                contacts.forEach(c => {
+                    if (!selected.has(c.id)) return;
+                    c.groupIds = c.groupIds || [];
+                    if (add && !c.groupIds.includes(gid)) c.groupIds.push(gid);
+                    if (!add) c.groupIds = c.groupIds.filter(x => x !== gid);
+                });
+                persistData();
+                $('bulkGroupModal').classList.add('hidden');
+                showToast(add ? 'Added to group' : 'Removed from group');
+                setSelectMode(false);
+            };
+            $('bulkGroupAdd').addEventListener('click', () => bulkApply(true));
+            $('bulkGroupRemove').addEventListener('click', () => bulkApply(false));
+
+            $('btnClearBin').addEventListener('click', () => {
+                const mine = recycleBin.filter(c => !!c.private === isPrivateMode).length;
+                if (!mine) return showToast('Recycle bin is already empty');
+                if (!confirm(`Permanently delete ${mine} item(s)? This cannot be undone.`)) return;
+                recycleBin = recycleBin.filter(c => !!c.private !== isPrivateMode);
+                persistData({ noSync: true });
+                renderCurrentTab();
+                showToast('Recycle bin emptied');
+            });
+
+            $('btnDuplicateFinder').addEventListener('click', () => { renderDuplicates(); $('duplicateModal').classList.remove('hidden'); });
+
+            $('btnExportJson').addEventListener('click', () => {
+                const list = contacts.filter(c => !!c.private === isPrivateMode);
+                const used = new Set(list.flatMap(c => c.groupIds || []));
+                const data = { exported: new Date().toISOString(), contacts: list, groups: isPrivateMode ? groups.filter(g => used.has(g.id)) : groups };
+                downloadFile('grizzly_contacts_backup.json', JSON.stringify(data, null, 2), 'application/json');
+            });
+            $('btnExportVcf').addEventListener('click', () => {
+                const list = contacts.filter(c => !!c.private === isPrivateMode);
+                if (!list.length) return showToast('No contacts to export');
+                downloadFile('grizzly_contacts.vcf', toVcard(list), 'text/vcard');
+            });
+            const readFile = (input, handler) => input.addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => { handler(String(ev.target.result)); e.target.value = ''; };
+                reader.onerror = () => { alert('Could not read that file.'); e.target.value = ''; };
+                reader.readAsText(file);
+            });
+            readFile($('importJsonInput'), importJsonText);
+            readFile($('importVcfInput'), importVcfText);
+        }
+
+        /* ---------- Init ---------- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initPreferences();
+            setupTabs();
+            setupSecretTrigger();
+            wireButtons();
+            purgeOldBin();
+            renderCurrentTab();
+            if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+        });
     </script>
 </body>
 </html>
